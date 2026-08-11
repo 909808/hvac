@@ -15,7 +15,7 @@
  * A track is a body of knowledge. Network+ is the first; HVAC controls will be
  * added alongside it without touching the engine.
  */
-export type TrackId = 'n10-009' | 'hvac-controls';
+export type TrackId = 'hvac' | 'n10-009';
 
 /** Domain within a track, e.g. Network+ domain "1.0" Networking Concepts. */
 export interface Domain {
@@ -39,6 +39,47 @@ export interface Track {
   /** Exam code or revision this content targets, shown in the UI. */
   readonly revision: string;
   readonly domains: readonly Domain[];
+  /**
+   * Optional guided progression. A track with sectors presents a path with
+   * checkpoints rather than a flat list of domains — appropriate when the
+   * material builds on itself, as HVAC does. Network+ has no sectors because
+   * its domains are genuinely independent and you can study them in any order.
+   */
+  readonly sectors?: readonly Sector[];
+}
+
+/** Simulators and generated drills a sector can offer. */
+export type LabId =
+  | 'service-call'
+  | 'pt-chart'
+  | 'superheat-subcooling'
+  | 'psychrometrics'
+  | 'heat-load'
+  | 'airflow'
+  | 'electrical';
+
+/**
+ * One step on a track's learning path.
+ *
+ * Sectors gate on the one before them, so the ordering is a claim about
+ * dependency: you cannot usefully diagnose a charge problem before you know what
+ * superheat is, and you cannot understand superheat without the refrigeration
+ * cycle. The gating exists to stop you drilling questions whose vocabulary you
+ * have not met yet.
+ */
+export interface Sector {
+  /** Matches a Domain id in the same track. */
+  readonly id: string;
+  readonly order: number;
+  readonly title: string;
+  readonly blurb: string;
+  readonly glyph: string;
+  /** Simulators unlocked by reaching this sector. */
+  readonly labs: readonly LabId[];
+  readonly checkpoint: {
+    readonly questions: number;
+    readonly passPercent: number;
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -120,12 +161,21 @@ export interface MultiQuestion extends QuestionBase {
   readonly answers: readonly number[];
 }
 
-/** Type the answer. Good for subnet masks, port numbers, command names. */
+/** Type the answer. Good for subnet masks, port numbers, calculated values. */
 export interface InputQuestion extends QuestionBase {
   readonly kind: 'input';
   /** All spellings counted as correct. Compared case-insensitively, trimmed. */
   readonly accept: readonly string[];
   readonly placeholder?: string;
+  /**
+   * Numeric tolerance. When set, a response that parses as a number within
+   * ± this of `accept[0]` is correct, regardless of formatting.
+   *
+   * Field calculations get read off gauges, charts and duct calculators, so
+   * demanding an exact decimal would fail people who did the work correctly.
+   * Each question sets the band a careful technician would actually land in.
+   */
+  readonly tolerance?: number;
 }
 
 /** Put the steps in the right order. Built for troubleshooting methodology. */
@@ -155,6 +205,7 @@ export type QuestionKind = Question['kind'];
 // ---------------------------------------------------------------------------
 
 export type NodeKind =
+  // Networking
   | 'router'
   | 'switch'
   | 'firewall'
@@ -163,7 +214,20 @@ export type NodeKind =
   | 'ap'
   | 'cloud'
   | 'controller'
-  | 'sensor';
+  | 'sensor'
+  // HVAC
+  | 'compressor'
+  | 'condenser'
+  | 'evaporator'
+  | 'metering'
+  | 'fan'
+  | 'blower'
+  | 'furnace'
+  | 'boiler'
+  | 'pump'
+  | 'damper'
+  | 'thermostat'
+  | 'accumulator';
 
 export interface TopologyNode {
   readonly id: string;

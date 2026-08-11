@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ALL_QUESTIONS, BOOKS, TRACKS, auditContent, contentStats } from '../src/content';
+import { ALL_QUESTIONS, BOOKS, HVAC, N10_009, TRACKS, auditContent, contentStats } from '../src/content';
 import { formatReport } from '../src/engine/validate';
 import { validateContent } from '../src/engine/validate';
 import { createRng } from '../src/engine/rng';
@@ -35,11 +35,41 @@ describe('authored content', () => {
     expect(offenders.map((q) => q.id)).toEqual([]);
   });
 
-  it('has enough verified content for every domain to appear in an exam', () => {
+  it('has enough verified content for every Network+ domain to appear in an exam', () => {
     const netplus = ALL_QUESTIONS.filter((q) => q.track === 'n10-009' && q.status === 'verified');
-    for (const domain of TRACKS[0]!.domains) {
+    for (const domain of N10_009.domains) {
       const count = netplus.filter((q) => q.domain === domain.id).length;
       expect(count, `domain ${domain.id} has no verified questions`).toBeGreaterThan(0);
+    }
+  });
+
+  it('has questions in every HVAC sector, so no checkpoint is unreachable', () => {
+    const hvac = ALL_QUESTIONS.filter((q) => q.track === 'hvac');
+    for (const sector of HVAC.sectors ?? []) {
+      const count = hvac.filter((q) => q.domain === sector.id).length;
+      expect(count, `sector ${sector.id} (${sector.title}) has no questions`).toBeGreaterThan(0);
+    }
+  });
+
+  it('gives every HVAC sector enough questions for its checkpoint', () => {
+    const hvac = ALL_QUESTIONS.filter((q) => q.track === 'hvac');
+    for (const sector of HVAC.sectors ?? []) {
+      const available = hvac.filter((q) => q.domain === sector.id).length;
+      // Generated drills top up several sectors, so the authored bank only has
+      // to be within reach of the checkpoint length rather than exceed it.
+      expect(
+        available,
+        `sector ${sector.id} has ${available} questions for a ${sector.checkpoint.questions}-question checkpoint`,
+      ).toBeGreaterThanOrEqual(Math.min(6, sector.checkpoint.questions));
+    }
+  });
+
+  it('points every sector at a domain that exists', () => {
+    for (const track of TRACKS) {
+      const domainIds = new Set(track.domains.map((d) => d.id));
+      for (const sector of track.sectors ?? []) {
+        expect(domainIds.has(sector.id), `${track.id} sector ${sector.id}`).toBe(true);
+      }
     }
   });
 
@@ -51,7 +81,7 @@ describe('authored content', () => {
 });
 
 describe('validator', () => {
-  const track = TRACKS[0]!;
+  const track = N10_009;
   const good = {
     id: 'n10-009.1.1.example',
     track: 'n10-009',

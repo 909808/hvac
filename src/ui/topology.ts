@@ -17,6 +17,7 @@ const NODE_W = 112;
 const NODE_H = 46;
 
 const GLYPHS: Record<NodeKind, string> = {
+  // Networking
   router: '◍',
   switch: '⧉',
   firewall: '▤',
@@ -26,6 +27,19 @@ const GLYPHS: Record<NodeKind, string> = {
   cloud: '☁',
   controller: '⚙',
   sensor: '◉',
+  // HVAC
+  compressor: '◒',
+  condenser: '▦',
+  evaporator: '▩',
+  metering: '◈',
+  fan: '✻',
+  blower: '❋',
+  furnace: '▲',
+  boiler: '◉',
+  pump: '◐',
+  damper: '▤',
+  thermostat: '◎',
+  accumulator: '◗',
 };
 
 export function renderTopology(topology: Topology): SVGElement {

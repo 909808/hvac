@@ -1,29 +1,35 @@
-import { randomSeed } from '@engine/rng';
+import { createRng, randomSeed } from '@engine/rng';
 import {
   clearProfile,
   emptyProfile,
   loadProfile,
+  recordCheckpoint,
   recordReview,
   recordRun,
   saveProfile,
   type Profile,
 } from '@engine/profile';
 import { Session } from '@engine/session';
+import type { FaultId, MeasurementId } from '@games/hvac/system';
+import { ServiceCallRun, generateServiceCall } from '@games/hvac/servicecall';
 import type { Response, Track } from '@engine/types';
 import { ALL_QUESTIONS, TRACKS, trackById } from '@content/index';
 import { clear, h } from './dom';
-import { buildSession, type ModeId } from './modes';
+import { buildMixedDrill, buildSession, type ModeId } from './modes';
 import { renderHome } from './screens/home';
 import { renderPlay, resetDraft } from './screens/play';
 import { renderResults } from './screens/results';
 import { renderAudit, renderProgress } from './screens/reports';
+import { renderSectorMap } from './screens/sectormap';
+import { renderServiceCall } from './screens/servicecall';
 
 type Screen =
   | { name: 'home' }
   | { name: 'play' }
   | { name: 'results'; previousBest: number }
   | { name: 'progress' }
-  | { name: 'audit' };
+  | { name: 'audit' }
+  | { name: 'service-call' };
 
 const TRACK_KEY = 'netplus-trainer:track';
 
@@ -41,6 +47,7 @@ export class App {
   private screen: Screen = { name: 'home' };
 
   private session: Session | undefined;
+  private call: ServiceCallRun | undefined;
   private mode: ModeId = 'drill';
   private domain: string | undefined;
   private seed = randomSeed();
@@ -68,19 +75,51 @@ export class App {
     switch (this.screen.name) {
       case 'home':
         this.stopTimer();
+        // A track with sectors gets the guided path; one without gets the flat
+        // mode grid. Network+ domains are independent, HVAC's are not.
         this.root.appendChild(
-          renderHome({
-            track: this.track,
-            tracks: TRACKS,
-            pool: ALL_QUESTIONS,
-            profile: this.profile,
-            onStart: this.start,
-            onSelectTrack: this.selectTrack,
-            onShowProgress: () => this.goto({ name: 'progress' }),
-            onShowAudit: () => this.goto({ name: 'audit' }),
+          this.track.sectors && this.track.sectors.length > 0
+            ? renderSectorMap({
+                track: this.track,
+                tracks: TRACKS,
+                pool: ALL_QUESTIONS,
+                profile: this.profile,
+                onStartDrill: (sectorId) => this.start('drill', sectorId),
+                onStartCheckpoint: (sectorId) => this.start('checkpoint', sectorId),
+                onStartLab: (mode) =>
+                  mode === 'service-call' ? this.startServiceCall() : this.start(mode),
+                onStartMixed: this.startMixed,
+                onStartWeak: () => this.start('weak'),
+                onSelectTrack: this.selectTrack,
+                onShowProgress: () => this.goto({ name: 'progress' }),
+                onShowAudit: () => this.goto({ name: 'audit' }),
+              })
+            : renderHome({
+                track: this.track,
+                tracks: TRACKS,
+                pool: ALL_QUESTIONS,
+                profile: this.profile,
+                onStart: this.start,
+                onSelectTrack: this.selectTrack,
+                onShowProgress: () => this.goto({ name: 'progress' }),
+                onShowAudit: () => this.goto({ name: 'audit' }),
+              }),
+        );
+        break;
+
+      case 'service-call': {
+        if (!this.call) return this.goto({ name: 'home' });
+        this.root.appendChild(
+          renderServiceCall({
+            run: this.call,
+            onMeasure: this.measure,
+            onDiagnose: this.diagnose,
+            onReplay: this.startServiceCall,
+            onHome: () => this.goto({ name: 'home' }),
           }),
         );
         break;
+      }
 
       case 'play': {
         if (!this.session) return this.goto({ name: 'home' });
@@ -141,7 +180,55 @@ export class App {
   // Session lifecycle
   // -------------------------------------------------------------------------
 
+  /** A service call runs its own screen and state machine, not a question session. */
+  private startServiceCall = (): void => {
+    this.mode = 'service-call';
+    this.seed = randomSeed();
+    this.call = new ServiceCallRun(generateServiceCall(createRng(this.seed)));
+    this.goto({ name: 'service-call' });
+  };
+
+  private measure = (id: MeasurementId): void => {
+    this.call?.measure(id);
+    this.render();
+  };
+
+  private diagnose = (id: FaultId): void => {
+    if (!this.call) return;
+    const outcome = this.call.diagnose(id);
+
+    this.profile = recordRun(
+      this.profile,
+      {
+        mode: 'service-call',
+        track: this.track.id,
+        at: Date.now(),
+        score: outcome.points,
+        asked: 1,
+        correct: outcome.correct ? 1 : 0,
+      },
+      0,
+    );
+    saveProfile(this.profile);
+    this.render();
+  };
+
+  private startMixed = (): void => {
+    this.mode = 'drill';
+    this.domain = undefined;
+    this.seed = randomSeed();
+    this.shuffleSeed = randomSeed();
+
+    const built = buildMixedDrill(this.seed);
+    this.session = new Session(built.config);
+    resetDraft();
+    this.stopTimer();
+    this.goto({ name: 'play' });
+  };
+
   private start = (mode: ModeId, domain?: string): void => {
+    if (mode === 'service-call') return this.startServiceCall();
+
     this.mode = mode;
     this.domain = domain;
     this.seed = randomSeed();
@@ -212,8 +299,11 @@ export class App {
     const snap = this.session.snapshot();
     const previousBest = this.profile.bests[this.mode] ?? 0;
     const asked = snap.answered.length;
+    const graded = this.mode === 'exam' || this.mode === 'checkpoint';
 
     if (asked > 0) {
+      const percent = Math.round((snap.correctCount / asked) * 100);
+
       this.profile = recordRun(
         this.profile,
         {
@@ -223,12 +313,29 @@ export class App {
           score: snap.score,
           asked,
           correct: snap.correctCount,
-          ...(this.mode === 'exam'
-            ? { percent: Math.round((snap.correctCount / asked) * 100) }
-            : {}),
+          ...(graded ? { percent } : {}),
         },
         snap.bestStreak,
       );
+
+      // A checkpoint is scored against the whole sector, so an abandoned run
+      // counts every unanswered question as missed — otherwise quitting after
+      // two right answers would read as 100%.
+      if (this.mode === 'checkpoint' && this.domain) {
+        const sector = this.track.sectors?.find((s) => s.id === this.domain);
+        if (sector) {
+          const total = Math.max(asked, snap.total);
+          const sectorPercent = Math.round((snap.correctCount / total) * 100);
+          this.profile = recordCheckpoint(
+            this.profile,
+            sector.id,
+            sectorPercent,
+            sector.checkpoint.passPercent,
+            Date.now(),
+          );
+        }
+      }
+
       saveProfile(this.profile);
     }
 

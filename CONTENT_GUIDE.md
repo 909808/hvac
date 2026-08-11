@@ -4,6 +4,10 @@ Everything in this guide assumes you have a book open next to you. That is the p
 the app is built so that transcribing from a real source is the easy path and inventing
 things is the awkward one.
 
+Two tracks share the same content model: **HVAC** (ten sectors, gated by checkpoints) and
+**CompTIA Network+ N10-009** (five domains, independent). Everything below applies to both;
+the track-specific parts are called out where they differ.
+
 ---
 
 ## The one rule
@@ -144,6 +148,20 @@ placeholder: 'command name',
 Compared case-insensitively with whitespace collapsed. List every reasonable spelling; a
 correct answer rejected on a technicality is worse than no question.
 
+For a **calculated** answer, set a numeric tolerance instead of enumerating strings:
+
+```ts
+kind: 'input',
+accept: ['118.5'],     // the computed value
+tolerance: 3,          // ±3 accepted
+placeholder: 'psig',
+```
+
+Grading parses the response as a number, so `118.5`, `119`, `118 psig` and `1,185` written
+as `1185` all behave sensibly. Set the tolerance to whatever a careful technician reading a
+gauge and a chart would actually land within — demanding an exact decimal fails people who
+did the work correctly.
+
 ### `order` — put in sequence
 
 ```ts
@@ -243,39 +261,111 @@ simulation.
 
 ---
 
-## Adding the HVAC controls track
+## Adding HVAC content
 
-The track is already registered and appears in the app; it just has no questions. To fill it:
+The HVAC track has ten sectors, one file each under `src/content/hvac/`. Open the file for
+the sector, copy an existing entry, change it, add it to the export at the bottom. That is
+the whole workflow.
 
-**1. Decide what the domains are.** Unlike N10-009, no external body dictates this. The
-outline in `src/content/tracks.ts` under `HVAC_CONTROLS` is a sketch — reshape it before
-there is content filed against it, because moving objectives later means editing every
-question that references them.
+```
+src/content/hvac/
+  sector-1-fundamentals.ts     1.0  Fundamentals & Safety
+  sector-2-cycle.ts            2.0  The Refrigeration Cycle
+  sector-3-refrigerants.ts     3.0  Refrigerants & EPA 608
+  sector-4-charging.ts         4.0  Metering Devices & Charging
+  sector-5-electrical.ts       5.0  Electrical Fundamentals
+  sector-6-airflow.ts          6.0  Airflow & Duct Systems
+  sector-7-psychrometrics.ts   7.0  Psychrometrics
+  sector-8-heating.ts          8.0  Heating: Furnaces & Boilers
+  sector-9-heatpumps.ts        9.0  Heat Pumps
+  sector-10-diagnostics.ts    10.0  Diagnostics & Service
+```
 
-**2. Register your references** in `src/content/books.ts`. For controls work the citable
-sources are better than you might expect:
+### Which HVAC sources are citable as `standard`
 
-- **ANSI/ASHRAE Standard 135** for anything BACnet — object types, services, MS/TP framing.
-  This is a primary source; cite it with `cite.standard`, not `cite.book`.
-- **The Modbus Application Protocol Specification** (modbus.org) for function codes and
-  register addressing. Also primary, also free.
-- **TIA-485-A** for RS-485 electrical characteristics — segment length, node count,
-  termination, biasing.
-- **The ASHRAE Handbook**, HVAC Applications volume, for building automation practice.
-- **Manufacturer sequence-of-operation documents** for the plant you actually work on.
-  Cite these as books with the document revision in the `edition` field.
+Better than you might expect, and worth preferring over a textbook wherever they apply:
 
-**3. Write questions into `src/content/hvac/`** and export them from `HVAC_QUESTIONS`.
-Everything else — scheduling, scoring, mastery tracking, the audit screen — already works.
+- **40 CFR Part 82, Subpart F** — every EPA 608 rule. Free, authoritative, and what the
+  exam is actually drawn from. Cite the section: `cite.standard('40 CFR §82.154')`.
+- **ASHRAE Handbook — Fundamentals, Chapter 1** — psychrometric equations and the standard
+  air constants behind 1.08, 0.68 and 4.5.
+- **OSHA 29 CFR 1910** — lockout/tagout and the electrical safety requirements.
+- **NFPA 70E** — safe electrical work practice, including live–dead–live verification.
+- **ANSI/ASHRAE Standard 15** — refrigeration system safety.
+- **The applicable fuel gas code** (NFPA 54 / IFGC) — venting categories, combustion air.
+- **Manufacturer literature** for the specific equipment: sequence of operation, charging
+  charts, nameplate charge and line-set adjustment. Cite as a book with the document
+  revision in the `edition` field.
+- **A derivation**, where the answer is arithmetic:
+  `cite.standard('Derived: 2,000 lb × 144 BTU/lb ÷ 24 h')`.
 
-The protocol and electrical facts are the ones that reach `verified` quickly, the same way
-the IANA port table did for Network+. Sequence-of-operation and troubleshooting content will
-mostly start as `draft` until you have a document to point at.
+Anything that is a study-guide framing rather than a specification — the three-tier
+troubleshooting habit, condenser split ranges, "look at the filter first" — should carry
+`cite.todo` and stay `draft` until you have a page to point at.
 
-There is real overlap worth exploiting: RS-485 topology and termination is the same class of
-problem as Ethernet cabling; BACnet/IP over a building network raises the same VLAN,
-broadcast-domain and segmentation questions as domain 4.3. Cross-reference rather than
-duplicating.
+### Adding a whole new sector
+
+1. Add the domain and the sector entry in `src/content/tracks.ts` under `HVAC`.
+   The sector `id` must match a domain `id`, and `order` sets its place on the path.
+2. Create `src/content/hvac/sector-N-name.ts` and export its questions.
+3. Import it in `src/content/hvac/index.ts`.
+4. `npm test` — there is a test asserting every sector has questions and every sector
+   points at a real domain, so a half-wired sector fails immediately.
+
+Domain `examWeight` values should still sum to 100 across the track; the validator warns
+if they do not.
+
+---
+
+## Extending the Service Call simulator
+
+The simulator lives in `src/games/hvac/`, and the two files that matter are:
+
+**`system.ts`** — the fault definitions and their effects. To add a fault:
+
+1. Add its id to `FaultId`.
+2. Add a `FaultDef` to `FAULTS` with its complaints, signature, explanation, key
+   measurements and the faults it is confused with.
+3. Add a case to `effectFor()` describing how it shifts evaporator saturation, condensing
+   temperature, superheat, subcooling, amps and the air-side temperature drop.
+4. Add it to a tier in `TIERS` in `servicecall.ts`.
+5. **Add a signature test** in `tests/hvac-system.test.ts`. This is not optional — the
+   whole value of the simulator is that its signatures match reality, and a test is what
+   keeps them there.
+
+The effect numbers are severity-scaled, so `-15 * s` means "drops evaporator saturation by
+up to 15°F at full severity". Sign conventions: positive raises the value.
+
+**`refrigerant.ts`** — P-T tables. To correct one against your own chart, edit the `curve`
+array. Entries are `[°F, psig]` ascending, interpolated linearly between rows. The tests
+check monotonicity, round-tripping and the well-known anchor points, so a mistyped row
+fails the build.
+
+To add a refrigerant, add a `Refrigerant` entry with its curve and
+`highPressureCutout` — the cutout is what stops the model running a failed-condenser-fan
+scenario off the top of the saturation curve.
+
+---
+
+## Extending the generated drills
+
+`src/games/hvac/drills.ts`. A generator is a function `(rng, id) => Question`. Add one, then
+register it in the `GENERATORS` map under the lab it belongs to.
+
+For numeric answers, use the schema-level tolerance rather than listing every acceptable
+string:
+
+```ts
+accept: [String(computedValue)],
+tolerance: 2,          // ±2 accepted, formatting-insensitive
+```
+
+Grading parses the response numerically, so `12000`, `12,000` and `12000 BTU/h` all match.
+There is a test asserting every generated numeric drill accepts its own stated answer — if
+a generator computes one number and explains a different one, the build fails.
+
+Generated questions must still file under a real domain and objective. A test checks that
+too.
 
 ---
 

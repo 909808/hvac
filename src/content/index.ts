@@ -26,7 +26,7 @@ export const ALL_QUESTIONS: readonly Question[] = [
 ];
 
 export { BOOKS } from './books';
-export { TRACKS, N10_009, HVAC_CONTROLS, trackById, objectiveTitle, domainTitle } from './tracks';
+export { TRACKS, N10_009, HVAC, trackById, objectiveTitle, domainTitle } from './tracks';
 
 export function auditContent(): ValidationReport {
   return validateContent({ tracks: TRACKS, books: BOOKS, questions: ALL_QUESTIONS });

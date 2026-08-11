@@ -1,177 +1,203 @@
-# Network+ Trainer
+# HVAC Trainer
 
-An interactive browser game for studying **CompTIA Network+ (N10-009)**, built so that
-the content it teaches you can be traced back to a source you trust.
+An interactive browser game for learning HVAC — the physics, the refrigeration cycle,
+refrigerants, charging, electrical, airflow, psychrometrics, heating, heat pumps and
+diagnostics. Ten sectors with checkpoints, plus simulators driven by a real physical model
+rather than a lookup table of canned answers.
 
-The engine is track-agnostic. Network+ is the first body of knowledge loaded into it;
-an HVAC controls track is already wired up and waiting for content.
+A CompTIA Network+ track ships alongside it, unchanged, on the same engine.
 
 ```bash
 npm install
 npm run dev        # http://localhost:5173
-npm test           # validates all content + engine tests
+npm test           # 156 tests: physics, fault signatures, content validation
 ```
 
 ---
 
-## Why it is built this way
+## The idea
 
-The hard part of a study game is not the game — it is that a wrong fact, drilled with
-spaced repetition, is worse than no study at all. You will remember it, confidently, and
-be wrong in the exam.
+Most study apps are a pile of multiple-choice questions. The parts of HVAC that are hard
+to learn from a book are not facts — they are **judgements**: whether 28°F of superheat
+means a leak or a restriction, whether a 16°F temperature drop is a problem or just humid
+weather, which three readings settle a call and which five are a waste of an hour.
 
-So the content layer is built around one rule: **nothing claims to be verified without a
-citation.** That rule is enforced three ways.
+So the core of this is a **system model**. A split system is simulated from its operating
+conditions, a fault is injected, and every reading you can take is derived from the same
+underlying state. Superheat computed from the gauges the sim hands you always agrees with
+the superheat the fault should produce, because they come from the same place.
 
-1. **At compile time.** `defineQuestion` will not typecheck an item marked
-   `status: 'verified'` whose source is `cite.todo(...)`. You cannot mark something
-   verified without pointing at a book, an RFC, or a generator.
-2. **At test time.** `npm test` runs a validator over every question: answer indices in
-   range, objectives that actually exist, no duplicate ids, no ambiguous match tables, no
-   citation to an unregistered book. A bad paste fails CI rather than reaching a study
-   session.
-3. **In the app.** Uncited items are badged `unverified` while you play, listed on the
-   Content Audit screen, and excluded from exam simulation entirely.
-
-Roughly two thirds of the starter content is cited to a primary standard — an RFC, an IEEE
-spec, a TIA cabling standard. Those are the most reliable items in the app, more so than
-any study guide, because you can check them against the source in a minute. The rest is
-marked `draft` and is waiting for you and a book.
+That has a useful consequence for correctness: the simulator's questions cannot be wrong
+the way a transcribed fact can. There is no step where a number gets copied by hand.
 
 ---
 
-## Which books to buy
+## Sectors
 
-**Buy one conceptual guide and one book of practice questions.** Two conceptual guides
-covering the same objectives is mostly wasted money; a guide with no practice bank leaves
-you unable to tell whether you actually know it.
+The path gates on itself — each sector opens when the one before it is passed. The order
+is a dependency claim, not a ranking.
 
-### Pick one as your main text
+| # | Sector | What unlocks |
+|---|---|---|
+| 1 | Fundamentals & Safety | — |
+| 2 | The Refrigeration Cycle | P-T Chart, Superheat & Subcooling |
+| 3 | Refrigerants & EPA 608 | |
+| 4 | Metering Devices & Charging | **Service Call** |
+| 5 | Electrical Fundamentals | Electrical Bench |
+| 6 | Airflow & Duct Systems | Airflow Bench |
+| 7 | Psychrometrics | Psych Lab, Heat Formulas |
+| 8 | Heating: Furnaces & Boilers | |
+| 9 | Heat Pumps | |
+| 10 | Diagnostics & Service | Service Call (all tiers) |
 
-| | |
-|---|---|
-| **CompTIA Network+ Certification All-in-One Exam Guide, Ninth Edition** | Jonathan S. Weissman & Mike Meyers · Total Seminars · ISBN **9780981621739** |
-| **CompTIA Network+ Study Guide: Exam N10-009**, 6th ed. | Todd Lammle & Jon Buhagiar · Sybex · ISBN **9781394235605** |
-
-They are both complete and both current. The difference is voice. Meyers/Weissman is
-conversational and explains *why* things work, with a lot of real-world context — better if
-networking is new to you. Lammle/Buhagiar is denser and more systematic, closer to a
-reference — better if you already work with this stuff and want the objectives covered
-crisply. Read a sample chapter of each and buy the one you would actually keep reading.
-
-### Then buy the practice bank
-
-| | |
-|---|---|
-| **CompTIA Network+ Practice Tests: Exam N10-009**, 3rd ed. | Craig Zacker · Sybex · ISBN **9781394239290** |
-
-Around 1,000 questions organised by domain. This is the book to transcribe *reasoning*
-from — not the questions themselves, but the explanations of why each distractor is wrong,
-which is the part this app's `whyWrong` field exists to hold.
-
-### Optional, only if you want it
-
-| | |
-|---|---|
-| **CompTIA Network+ N10-009 Cert Guide**, 2nd ed. | Anthony Sequeira · Pearson IT Certification · ISBN **9780135367889** |
-| **CompTIA Network+ N10-009 Exam Cram** | Emmett Dulaney · Pearson IT Certification · ISBN **9780135340837** |
-
-The Cert Guide is a good third opinion when a topic will not click. The Exam Cram is a
-last-week condensation — useful for final review, useless as a first read.
-
-### Two free things worth more than a fourth book
-
-- **The official exam objectives PDF**, from CompTIA's certification site. Free, and it is
-  the only authoritative statement of what is on the exam. Everything else, including this
-  repo, is somebody's interpretation of it. Download it and check
-  [`src/content/tracks.ts`](src/content/tracks.ts) against it — that file was written from
-  published summaries, not from the PDF itself, so the objective titles deserve one
-  pass of your eyes.
-- **Professor Messer's N10-009 video course.** Free on his site and YouTube. Pairs well
-  with either main text.
-
-> Editions and ISBNs above were checked against publisher and retailer listings in
-> August 2026. Page numbers move between printings, so record the edition you own in
-> [`src/content/books.ts`](src/content/books.ts) — it is already filled in for all five.
-
-**One caution:** N10-009 launched in June 2024 and is expected to retire around late 2027.
-Anything written for **N10-008** is a version behind. Check the exam code on the cover
-before you buy, especially second-hand.
+Deliberately out of scope: proprietary building-automation platforms and controls
+integration. That is a specialism with its own tooling, and simulating it without the real
+front end would teach the wrong habits.
 
 ---
 
-## Adding content
+## The Service Call simulator
 
-See **[CONTENT_GUIDE.md](CONTENT_GUIDE.md)** for the full walkthrough. The short version:
+The flagship. A customer complaint, a system with something wrong, and a van full of
+instruments.
 
-```ts
-defineQuestion({
-  id: 'n10-009.2.2.stp-root-election',
-  track: 'n10-009',
-  domain: '2.0',
-  objective: '2.2',
-  kind: 'choice',
-  difficulty: 2,
-  prompt: 'Which switch becomes the root bridge?',
-  choices: ['Lowest bridge ID', 'Highest MAC address', '…'],
-  answer: 0,
-  explain: 'Say why, not just what — this is the part you will actually read at 11pm.',
-  source: cite.book('meyers-9e', '312-314'),
-  status: 'verified',
-});
-```
+You pick what to measure. Each reading costs time against a 25-minute budget. Readings
+appear on a live refrigeration circuit diagram at the point they were taken, and derived
+values — superheat, subcooling, condenser split, evaporator temperature drop — appear
+automatically once both of their inputs exist. Then you commit to a diagnosis.
 
-Then `npm test`. If you got something structurally wrong, it tells you exactly what and where.
+**Scoring rewards evidence, not luck.** Guessing correctly without taking the readings that
+prove it scores 40% and is graded "lucky guess", because on a real call that is exactly
+what it was. The debrief shows the fault's signature, which key readings you skipped, and
+contrasts it with the faults it is genuinely confused with.
 
----
+Nine faults are modelled, each with the signature a technician is trained to recognise:
 
-## Game modes
+| Fault | Suction | Head | Superheat | Subcooling | Air ΔT |
+|---|---|---|---|---|---|
+| Undercharge | low | low | **high** | **low** | low |
+| Restriction | low | low-normal | **high** | **high** | low |
+| Overcharge | high | high | low | high | low |
+| Dirty condenser | high | **high** | normal | normal-high | low |
+| Condenser fan failed | high | **very high** | normal | high | low |
+| Low evaporator airflow | low | low | low | normal-high | **high** |
+| Compressor inefficient | **high** | **low** | high | low | low |
+| Non-condensables | normal | high | normal | high | low |
+| TXV overfeeding | high | normal | **near zero** | low | low |
 
-| Mode | What it does |
-|---|---|
-| **Drill** | Spaced-repetition practice from the authored bank, explanation after each answer. Where most of your time should go. |
-| **Weak Spots** | Only the questions with the lowest mastery. Unlocks after a few sessions of history. |
-| **Subnet Lab** | Procedurally generated IPv4 practice — network/broadcast addresses, host ranges, VLSM, classification. Infinite supply, correct by construction. |
-| **Port Rush** | Two-minute timer, three lives, rapid-fire ports and protocols. |
-| **Exam Simulation** | 90 questions in 90 minutes, domains sampled at the published weightings, explanations held to the end. Verified content only. |
+The two rows worth memorising are the first two. Both starve the evaporator and both drive
+superheat up — **subcooling is what separates them**, and getting it backwards is how a good
+metering device gets replaced on a system that was simply low.
 
-Five question types are supported: single choice, select-all-that-apply, typed input,
-put-in-order, and match-the-pairs. Scenario questions can carry an SVG topology diagram.
-
-Number keys pick an option, `Enter` continues, `S` skips.
+Each of those signatures is pinned by a test. If one flips, the build fails, because a
+simulator that teaches a wrong diagnosis is worse than no simulator.
 
 ---
 
-## How it is laid out
+## Generated drills
+
+Six labs, all computed rather than transcribed, so the supply is unlimited and there is no
+citation risk:
+
+- **P-T Chart** — pressure ↔ saturation temperature for R-22, R-410A, R-134a
+- **Superheat & Subcooling** — calculate both, then read the pairings
+- **Psych Lab** — dry bulb + wet bulb → RH, dew point, grains, enthalpy
+- **Heat Formulas** — 1.08, 0.68, 4.5 and 500
+- **Airflow Bench** — CFM/ton, total external static, friction rate, the three fan laws
+- **Electrical Bench** — Ohm's law, power, series/parallel, capacitor tolerance
+
+Psychrometrics is computed from the ASHRAE Fundamentals equations, not interpolated from a
+chart image. Spot-checked against published chart values: 80°F DB / 67°F WB gives 51.1% RH
+and 31.45 Btu/lb, which is what the chart says.
+
+---
+
+## The one thing to check
+
+**The refrigerant P-T tables in `src/games/hvac/refrigerant.ts` are the highest-priority
+item to verify against a real manufacturer P-T chart** — the one in your gauge case is the
+authority, not this file. They are seeded from published saturation data and are good to
+roughly ±2 psi across the comfort-cooling range.
+
+Why that is safe in the meantime: the simulator generates every scenario from *saturation
+temperature*, and converts to gauge pressure only for display. Superheat, subcooling,
+condenser split and every fault signature are computed in °F. If a pressure is off by a psi
+or two, the gauge face shifts slightly and the correct diagnosis does not change at all.
+
+Tests pin the anchors every technician knows — R-22 at 40°F is 68.5 psig, R-410A at 40°F is
+118.5 psig — plus monotonicity and pressure↔temperature round-tripping.
+
+---
+
+## Content integrity
+
+Same discipline as the Network+ track. Every authored fact carries a citation, enforced
+three ways:
+
+1. **Compile time** — `defineQuestion` will not typecheck an item marked `status: 'verified'`
+   whose source is `cite.todo(...)`.
+2. **Test time** — a validator checks answer indices, objective codes, duplicate ids,
+   ambiguous match tables, unregistered book citations. A bad paste fails CI.
+3. **In the app** — uncited items are badged `unverified` while you play, listed on the
+   Content Audit screen, and excluded from checkpoints.
+
+Current state: **92 HVAC questions, 24 verified, 68 awaiting a citation.** The verified ones
+are cited to things you can check in a minute — 40 CFR Part 82 for the EPA rules, ASHRAE
+Fundamentals for psychrometrics, OSHA 1910.147 for lockout/tagout, or a stated derivation.
+The 68 drafts are study-guide framings, and I did not invent page numbers for them.
+
+Adding content is the main way to extend this. See **[CONTENT_GUIDE.md](CONTENT_GUIDE.md)**.
+
+---
+
+## Books
+
+You asked about books for Network+ previously; for HVAC the equivalents are:
+
+- **Refrigeration and Air Conditioning Technology**, Silberstein / Whitman / Johnson / Tomczyk
+  (Cengage) — the standard trade-school text, and the one most programs teach from.
+- **Modern Refrigeration and Air Conditioning**, Althouse / Turnquist / Bracciano
+  (Goodheart-Willcox) — the other standard, heavier on diagrams.
+- **Audel HVAC Fundamentals** (3 vols) — good field reference rather than a first read.
+- **ASHRAE Handbook — Fundamentals** — the authority for psychrometrics and load
+  calculation. Expensive; a library copy is fine for the chapters you need.
+- **EPA 608 prep** — any current study guide, but verify against the actual 40 CFR Part 82
+  text, which is free online and is what the exam is drawn from.
+
+I have deliberately **not** registered these in `src/content/books.ts` with ISBNs, because
+unlike the Network+ list I have not verified current editions for them. Add whichever you
+buy, with the edition and ISBN in front of you — the guide explains how.
+
+---
+
+## Layout
 
 ```
 src/
-  engine/          Track-agnostic. No Network+ knowledge lives here.
-    types.ts       The content model
-    define.ts      defineQuestion + the compile-time citation rule
-    validate.ts    Structural validation
-    grade.ts       Answer checking, including partial credit
-    srs.ts         Spaced repetition (SM-2 adapted for partial credit)
-    session.ts     The game loop
-    select.ts      Exam paper construction, weighted by domain
-    profile.ts     Progress, mastery, persistence
-  content/         The facts. This is the part you will edit.
-    books.ts       Registered sources
-    tracks.ts      Domains and objectives
-    network-plus/  One file per domain
-    hvac/          Empty, ready for you
-  games/           Procedural generators
-    ipv4.ts        Subnet arithmetic (heavily unit-tested)
-    subnet.ts      Generated subnetting questions
-    portrush.ts    Generated port questions
-  ui/              Browser front-end, no framework
-tests/             86 tests over the engine, the maths and all content
+  engine/            Track-agnostic. No HVAC or networking knowledge here.
+    types.ts         Content model, sectors, question kinds
+    define.ts        defineQuestion + the compile-time citation rule
+    validate.ts      Structural validation
+    grade.ts         Answer checking, partial credit, numeric tolerance
+    srs.ts           Spaced repetition
+    session.ts       The question game loop
+    progression.ts   Sector gating and checkpoints
+    profile.ts       Progress, mastery, persistence
+  games/hvac/
+    refrigerant.ts   P-T tables, superheat, subcooling, condenser split
+    psychrometrics.ts ASHRAE equations — computed, not looked up
+    airflow.ts       Static pressure, fan laws, delta-T judgement
+    system.ts        The system model and its nine faults
+    servicecall.ts   Scenario generation and scoring
+    drills.ts        Six generated drill families
+  games/             ipv4.ts, subnet.ts, portrush.ts — the Network+ generators
+  content/
+    tracks.ts        Sectors, domains, objectives for both tracks
+    hvac/            One file per sector
+    network-plus/    One file per domain
+  ui/                Browser front-end, no framework
+tests/               156 tests
 ```
-
-The engine knows nothing about networking, which is what makes the HVAC track a matter of
-adding files rather than changing code.
-
----
 
 ## Scripts
 
@@ -179,8 +205,7 @@ adding files rather than changing code.
 |---|---|
 | `npm run dev` | Dev server with hot reload |
 | `npm run build` | Typecheck, then production build to `dist/` |
-| `npm test` | Content validation + engine tests |
+| `npm test` | Physics, fault signatures, content validation |
 | `npm run check` | Typecheck and test together |
 
-`dist/` is a static site — it will host anywhere, and all progress is kept in
-`localStorage`, so there is no backend to run.
+`dist/` is a static site. Progress lives in `localStorage`; there is no backend.

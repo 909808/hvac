@@ -43,8 +43,21 @@ export function grade(question: Question, response: Response): Judgement {
     case 'input': {
       const r = response as Extract<Response, { kind: 'input' }>;
       const given = normaliseInput(r.text);
-      const correct = question.accept.some((a) => normaliseInput(a) === given);
-      return { correct, credit: correct ? 1 : 0, wrongParts: [] };
+
+      if (question.accept.some((a) => normaliseInput(a) === given)) {
+        return { correct: true, credit: 1, wrongParts: [] };
+      }
+
+      if (question.tolerance !== undefined) {
+        const expected = parseNumeric(question.accept[0] ?? '');
+        const actual = parseNumeric(r.text);
+        if (expected !== undefined && actual !== undefined) {
+          const correct = Math.abs(actual - expected) <= question.tolerance;
+          return { correct, credit: correct ? 1 : 0, wrongParts: [] };
+        }
+      }
+
+      return { correct: false, credit: 0, wrongParts: [] };
     }
 
     case 'order': {
@@ -74,6 +87,19 @@ export function grade(question: Question, response: Response): Judgement {
       return { correct: hits === n, credit: n === 0 ? 0 : hits / n, wrongParts };
     }
   }
+}
+
+/**
+ * Pull a number out of a typed answer, tolerating the ways people actually
+ * write them: thousands separators, a trailing unit, a leading symbol.
+ * Returns undefined if there is no single unambiguous number in there.
+ */
+export function parseNumeric(text: string): number | undefined {
+  const cleaned = text.trim().replace(/,/g, '');
+  const match = /^[^\d+-]*([+-]?\d*\.?\d+)/.exec(cleaned);
+  if (!match) return undefined;
+  const value = Number(match[1]);
+  return Number.isFinite(value) ? value : undefined;
 }
 
 /** Renders the correct answer for the review panel, whatever the kind. */

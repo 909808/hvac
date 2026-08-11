@@ -1,3 +1,4 @@
+import type { CheckpointRecord } from './progression';
 import type { CardState } from './srs';
 import { mastery, newCard, review } from './srs';
 import type { Question, TrackId } from './types';
@@ -14,20 +15,22 @@ export interface RunRecord {
 }
 
 export interface Profile {
-  readonly version: 2;
+  readonly version: 3;
   readonly cards: Readonly<Record<string, CardState>>;
   readonly xp: number;
   readonly bestStreak: number;
   readonly runs: readonly RunRecord[];
   /** Best score per mode, for the "beat your record" loop. */
   readonly bests: Readonly<Record<string, number>>;
+  /** Checkpoint results, keyed by sector id. Drives sector unlocking. */
+  readonly checkpoints: Readonly<Record<string, CheckpointRecord>>;
 }
 
-const STORAGE_KEY = 'netplus-trainer:profile:v2';
+const STORAGE_KEY = 'hvac-trainer:profile:v3';
 const MAX_RUNS = 200;
 
 export function emptyProfile(): Profile {
-  return { version: 2, cards: {}, xp: 0, bestStreak: 0, runs: [], bests: {} };
+  return { version: 3, cards: {}, xp: 0, bestStreak: 0, runs: [], bests: {}, checkpoints: {} };
 }
 
 export function loadProfile(storage: Storage | undefined = safeStorage()): Profile {
@@ -36,14 +39,15 @@ export function loadProfile(storage: Storage | undefined = safeStorage()): Profi
     const raw = storage.getItem(STORAGE_KEY);
     if (!raw) return emptyProfile();
     const parsed = JSON.parse(raw) as Partial<Profile>;
-    if (parsed.version !== 2) return emptyProfile();
+    if (parsed.version !== 3) return emptyProfile();
     return {
-      version: 2,
+      version: 3,
       cards: parsed.cards ?? {},
       xp: parsed.xp ?? 0,
       bestStreak: parsed.bestStreak ?? 0,
       runs: parsed.runs ?? [],
       bests: parsed.bests ?? {},
+      checkpoints: parsed.checkpoints ?? {},
     };
   } catch {
     // A corrupted profile should cost you your history, not the whole app.
@@ -88,6 +92,28 @@ export function recordReview(
 ): Profile {
   const card = review(cardFor(profile, questionId, now), credit, now);
   return { ...profile, cards: { ...profile.cards, [questionId]: card } };
+}
+
+/**
+ * Record a checkpoint attempt. Once a sector is passed it stays passed — a
+ * later weaker attempt must not re-lock everything downstream.
+ */
+export function recordCheckpoint(
+  profile: Profile,
+  sectorId: string,
+  percent: number,
+  passPercent: number,
+  now: number,
+): Profile {
+  const previous = profile.checkpoints[sectorId];
+  const record: CheckpointRecord = {
+    sectorId,
+    passed: (previous?.passed ?? false) || percent >= passPercent,
+    bestPercent: Math.max(previous?.bestPercent ?? 0, Math.round(percent)),
+    attempts: (previous?.attempts ?? 0) + 1,
+    lastAttemptAt: now,
+  };
+  return { ...profile, checkpoints: { ...profile.checkpoints, [sectorId]: record } };
 }
 
 export function recordRun(profile: Profile, run: RunRecord, streak: number): Profile {

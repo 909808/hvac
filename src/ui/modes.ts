@@ -8,7 +8,19 @@ import type { Question, Track } from '@engine/types';
 import { generatePortQuestions } from '@games/portrush';
 import { generateSubnetQuestions } from '@games/subnet';
 
-export type ModeId = 'drill' | 'subnet' | 'ports' | 'exam' | 'weak';
+import { generateDrill, generateMixedDrill, type DrillLabId } from '@games/hvac/drills';
+
+export type ModeId =
+  | 'drill'
+  | 'weak'
+  | 'exam'
+  // Network+ labs
+  | 'subnet'
+  | 'ports'
+  // HVAC
+  | 'checkpoint'
+  | 'service-call'
+  | DrillLabId;
 
 export interface ModeDef {
   readonly id: ModeId;
@@ -19,6 +31,81 @@ export interface ModeDef {
   /** Only offered for tracks that have the content this mode needs. */
   readonly tracks: readonly string[];
 }
+
+/** HVAC lab modes, shown once their sector is reached. */
+export const LAB_MODES: readonly ModeDef[] = [
+  {
+    id: 'service-call',
+    name: 'Service Call',
+    tagline: 'Diagnose a live system',
+    detail:
+      'A customer complaint and a system with something wrong. Choose what to measure, watch the ' +
+      'clock, then commit to a diagnosis. Readings come from a physical model, so the signatures ' +
+      'behave the way they do on real equipment.',
+    glyph: '🔧',
+    tracks: ['hvac'],
+  },
+  {
+    id: 'pt-chart',
+    name: 'P-T Chart',
+    tagline: 'Pressure ↔ temperature, both ways',
+    detail:
+      'Convert between gauge pressure and saturation temperature for R-22, R-410A and R-134a until ' +
+      'it is automatic. Generated from the tables, so the supply never runs out.',
+    glyph: '🌡',
+    tracks: ['hvac'],
+  },
+  {
+    id: 'superheat-subcooling',
+    name: 'Superheat & Subcooling',
+    tagline: 'The two numbers that matter',
+    detail:
+      'Calculate both from gauge and thermometer readings, then read the pairings — high superheat ' +
+      'with low subcooling versus high with high — that separate an undercharge from a restriction.',
+    glyph: '♻',
+    tracks: ['hvac'],
+  },
+  {
+    id: 'psychrometrics',
+    name: 'Psych Lab',
+    tagline: 'Air properties from any two readings',
+    detail:
+      'Dry bulb and wet bulb in, relative humidity, dew point, grains and enthalpy out. Computed ' +
+      'from the ASHRAE equations rather than read off a chart.',
+    glyph: '📊',
+    tracks: ['hvac'],
+  },
+  {
+    id: 'heat-load',
+    name: 'Heat Formulas',
+    tagline: '1.08, 0.68, 4.5 and 500',
+    detail:
+      'Sensible, latent, total and hydronic heat until the constants come without thinking. These ' +
+      'are the formulas behind every capacity calculation on the job.',
+    glyph: '🔥',
+    tracks: ['hvac'],
+  },
+  {
+    id: 'airflow',
+    name: 'Airflow Bench',
+    tagline: 'CFM, static pressure and the fan laws',
+    detail:
+      'CFM per ton, total external static, friction rate, and the three fan laws — including the ' +
+      'cube law that burns out blower motors.',
+    glyph: '💨',
+    tracks: ['hvac'],
+  },
+  {
+    id: 'electrical',
+    name: 'Electrical Bench',
+    tagline: "Ohm's law, circuits and capacitors",
+    detail:
+      'Current, power, series and parallel resistance, and judging a run capacitor against its ' +
+      'tolerance band.',
+    glyph: '⚡',
+    tracks: ['hvac'],
+  },
+];
 
 export const MODES: readonly ModeDef[] = [
   {
@@ -73,10 +160,25 @@ export const MODES: readonly ModeDef[] = [
   },
 ];
 
+const CHECKPOINT_MODE: ModeDef = {
+  id: 'checkpoint',
+  name: 'Checkpoint',
+  tagline: 'Pass to unlock the next sector',
+  detail: 'A graded test over this sector. Explanations are held until the end.',
+  glyph: '🎯',
+  tracks: ['hvac'],
+};
+
 export function modeById(id: ModeId): ModeDef {
-  const found = MODES.find((m) => m.id === id);
+  const found =
+    [...MODES, ...LAB_MODES].find((m) => m.id === id) ??
+    (id === 'checkpoint' ? CHECKPOINT_MODE : undefined);
   if (!found) throw new Error(`unknown mode "${id}"`);
   return found;
+}
+
+export function labModesFor(unlocked: ReadonlySet<string>, trackId: string): ModeDef[] {
+  return LAB_MODES.filter((m) => m.tracks.includes(trackId) && unlocked.has(m.id));
 }
 
 export interface BuildOptions {
@@ -176,7 +278,69 @@ export function buildSession(options: BuildOptions): BuiltSession {
           timeLimitSec: EXAM_SECONDS,
         },
       };
+
+    case 'checkpoint': {
+      const sector = options.track.sectors?.find((s) => s.id === options.domain);
+      const authored = filterQuestions(options.pool, {
+        track: options.track.id,
+        ...(options.domain ? { domain: options.domain } : {}),
+      });
+
+      const wanted = sector?.checkpoint.questions ?? 10;
+      const picked = rng.sample(authored, wanted);
+
+      // Top up from the generated drills this sector owns, so a checkpoint is
+      // never short just because the authored bank is still thin.
+      if (picked.length < wanted && sector) {
+        const labs = sector.labs.filter((l): l is DrillLabId => l !== 'service-call');
+        for (const lab of labs) {
+          if (picked.length >= wanted) break;
+          picked.push(...generateDrill(lab, rng, wanted - picked.length));
+        }
+      }
+
+      return {
+        seed,
+        config: {
+          mode: 'checkpoint',
+          questions: rng.shuffle(picked).slice(0, wanted),
+          revealMode: 'deferred',
+        },
+      };
+    }
+
+    case 'service-call':
+      // Handled by its own screen rather than the question session loop.
+      throw new Error('service-call does not build a question session');
+
+    case 'pt-chart':
+    case 'superheat-subcooling':
+    case 'psychrometrics':
+    case 'heat-load':
+    case 'airflow':
+    case 'electrical':
+      return {
+        seed,
+        config: {
+          mode: options.mode,
+          questions: generateDrill(options.mode, rng, GENERATED_QUESTIONS),
+          revealMode: 'immediate',
+        },
+      };
   }
+}
+
+/** A mixed calculation workout across every HVAC drill generator. */
+export function buildMixedDrill(seed: number): BuiltSession {
+  const rng = createRng(seed);
+  return {
+    seed,
+    config: {
+      mode: 'drill',
+      questions: generateMixedDrill(rng, GENERATED_QUESTIONS),
+      revealMode: 'immediate',
+    },
+  };
 }
 
 /** Why a mode cannot be started right now, or undefined if it can. */
