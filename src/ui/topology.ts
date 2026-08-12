@@ -42,7 +42,16 @@ const GLYPHS: Record<NodeKind, string> = {
   accumulator: '◗',
 };
 
-export function renderTopology(topology: Topology): SVGElement {
+export interface TopologyOptions {
+  /** Makes nodes clickable, for hotspot questions. */
+  readonly onPick?: (nodeId: string) => void;
+  /** Node ids to mark, after the answer is revealed. */
+  readonly correct?: string;
+  readonly chosen?: string;
+  readonly disabled?: boolean;
+}
+
+export function renderTopology(topology: Topology, options: TopologyOptions = {}): SVGElement {
   const maxCol = Math.max(...topology.nodes.map((n) => n.col));
   const maxRow = Math.max(...topology.nodes.map((n) => n.row));
   const width = (maxCol + 1) * CELL_W + PAD * 2;
@@ -97,7 +106,28 @@ export function renderTopology(topology: Topology): SVGElement {
 
   for (const node of topology.nodes) {
     const { x, y } = centre(node.col, node.row);
-    const group = svg('g', { class: `topo-node topo-${node.state ?? 'ok'}` });
+
+    const classes = ['topo-node', `topo-${node.state ?? 'ok'}`];
+    if (options.onPick) classes.push('topo-pickable');
+    if (options.correct === node.id) classes.push('topo-answer');
+    if (options.chosen === node.id && options.correct !== node.id) classes.push('topo-chosen');
+
+    const group = svg('g', { class: classes.join(' ') });
+
+    if (options.onPick && !options.disabled) {
+      group.setAttribute('role', 'button');
+      group.setAttribute('tabindex', '0');
+      group.setAttribute('aria-label', node.label);
+      const pick = () => options.onPick?.(node.id);
+      group.addEventListener('click', pick);
+      group.addEventListener('keydown', (event) => {
+        const key = (event as KeyboardEvent).key;
+        if (key === 'Enter' || key === ' ') {
+          event.preventDefault();
+          pick();
+        }
+      });
+    }
 
     group.appendChild(
       svg('rect', {

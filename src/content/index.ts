@@ -1,7 +1,9 @@
 import type { Question } from '@engine/types';
-import { validateContent, type ValidationReport } from '@engine/validate';
+import { validateContent, type Issue, type ValidationReport } from '@engine/validate';
+import { validateLessons, type Lesson } from '@engine/lesson';
 import { BOOKS } from './books';
 import { TRACKS } from './tracks';
+import { HVAC_LESSONS } from './hvac/lessons';
 import { DOMAIN_1_QUESTIONS } from './network-plus/domain-1-concepts';
 import { DOMAIN_2_QUESTIONS } from './network-plus/domain-2-implementation';
 import { DOMAIN_3_QUESTIONS } from './network-plus/domain-3-operations';
@@ -28,8 +30,38 @@ export const ALL_QUESTIONS: readonly Question[] = [
 export { BOOKS } from './books';
 export { TRACKS, N10_009, HVAC, trackById, objectiveTitle, domainTitle } from './tracks';
 
+/** Every lesson in the app. */
+export const ALL_LESSONS: readonly Lesson[] = [...HVAC_LESSONS];
+
+export { lessonsFor, lessonMinutes } from '@engine/lesson';
+
+/**
+ * Validate questions and lessons together, so the audit screen and the test
+ * suite see one combined report.
+ */
 export function auditContent(): ValidationReport {
-  return validateContent({ tracks: TRACKS, books: BOOKS, questions: ALL_QUESTIONS });
+  const questionReport = validateContent({
+    tracks: TRACKS,
+    books: BOOKS,
+    questions: ALL_QUESTIONS,
+  });
+
+  const domainsByTrack = new Map(
+    TRACKS.map((t) => [t.id, new Set(t.domains.map((d) => d.id))] as const),
+  );
+  const lessonIssues: Issue[] = validateLessons(ALL_LESSONS, domainsByTrack).map((issue) => ({
+    level: issue.level,
+    subject: issue.subject,
+    message: issue.message,
+  }));
+
+  const errors = [...questionReport.errors, ...lessonIssues.filter((i) => i.level === 'error')];
+  const warnings = [
+    ...questionReport.warnings,
+    ...lessonIssues.filter((i) => i.level === 'warning'),
+  ];
+
+  return { errors, warnings, ok: errors.length === 0 };
 }
 
 export interface ContentStats {

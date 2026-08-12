@@ -240,13 +240,272 @@ const nonCondensableCause = defineQuestion({
   status: 'draft',
 });
 
+// --- more 4.1 ---------------------------------------------------------------
+
+const looseBulb = defineQuestion({
+  ...T,
+  id: 'hvac.4.1.loose-bulb',
+  objective: '4.1',
+  kind: 'choice',
+  difficulty: 3,
+  prompt:
+    'A TXV system shows near-zero superheat and the suction line is sweating back to the ' +
+    'compressor. The charge was weighed in correctly last week.\n\nWhat should you check first?',
+  choices: [
+    'Whether the TXV sensing bulb is still properly clamped and insulated on the suction line',
+    'The condenser coil for dirt',
+    'The compressor windings',
+    'The outdoor fan motor',
+  ],
+  answer: 0,
+  explain:
+    'A bulb that has come loose senses room air instead of the suction line. Room air is warm ' +
+    'compared to a suction line, so the valve reads that as "far too much superheat" and holds ' +
+    'itself wide open — flooding the evaporator.\n\n' +
+    'The charge being known-correct is what points here rather than at an overcharge. Both produce ' +
+    'low superheat, but only one of them is consistent with a charge you weighed in yourself.\n\n' +
+    'It is a mundane fix and a genuinely common one. Re-secure the bulb, clean contact, proper ' +
+    'clamp, insulated over the top, at 10 or 2 o\'clock on a horizontal line.',
+  source: cite.todo('Confirm the TXV bulb failure discussion against your text.'),
+  status: 'draft',
+});
+
+const bulbPosition = defineQuestion({
+  ...T,
+  id: 'hvac.4.1.bulb-clock-position',
+  objective: '4.1',
+  kind: 'choice',
+  difficulty: 3,
+  prompt:
+    'Why is a TXV sensing bulb mounted at the 10 or 2 o\'clock position on a horizontal suction line, ' +
+    'rather than at the bottom?',
+  choices: [
+    'Oil pools in the bottom of the line, so a bulb there would sense the oil rather than the refrigerant',
+    'The bottom of the line is physically harder to reach',
+    'Mounting at the bottom would strain the capillary',
+    'The bottom of the line is colder',
+  ],
+  answer: 0,
+  explain:
+    'Oil returning through the system runs along the bottom of a horizontal line. A bulb clamped ' +
+    'there senses the oil temperature, which lags and misrepresents what the refrigerant is doing.\n\n' +
+    'The 10 or 2 o\'clock positions get good contact with the pipe wall where refrigerant is ' +
+    'actually flowing. On larger lines the very top is also avoided, because vapour stratifies ' +
+    'there.\n\n' +
+    'A poorly positioned bulb produces a valve that hunts and never settles — and gets diagnosed ' +
+    'as a bad TXV when the valve is perfectly fine.',
+  source: cite.todo('Confirm bulb mounting practice against your text and manufacturer instructions.'),
+  status: 'draft',
+});
+
+const eevAdvantage = defineQuestion({
+  ...T,
+  id: 'hvac.4.1.eev-advantage',
+  objective: '4.1',
+  kind: 'choice',
+  difficulty: 2,
+  prompt: 'What does an electronic expansion valve offer over a thermostatic one?',
+  choices: [
+    'Faster response and a much wider operating range, because a controller drives it rather than a bulb charge',
+    'It needs no superheat measurement at all',
+    'It eliminates the need for a filter drier',
+    'It works without electrical power',
+  ],
+  answer: 0,
+  explain:
+    'A TXV is a mechanical device: bulb pressure against spring and evaporator pressure. It works ' +
+    'well but it responds slowly and only over the range its charge was designed for.\n\n' +
+    'An EEV uses a temperature sensor and a pressure transducer feeding a controller, which drives ' +
+    'a stepper motor. That gives much finer control, faster response to load changes, and the ' +
+    'ability to hold tight superheat across a wide range — which is what variable-capacity and ' +
+    'inverter systems need.\n\n' +
+    'The trade is complexity: it needs power, a controller and sensors, and any of those can fail.',
+  source: cite.todo('Confirm the EEV discussion against your text.'),
+  status: 'draft',
+});
+
+// --- more 4.2 / 4.3 ---------------------------------------------------------
+
+const wetBulbNotDry = defineQuestion({
+  ...T,
+  id: 'hvac.4.2.why-wet-bulb',
+  objective: '4.2',
+  kind: 'choice',
+  difficulty: 3,
+  prompt:
+    'A superheat charging chart uses indoor WET bulb rather than dry bulb.\n\nWhy?',
+  choices: [
+    'Wet bulb reflects total heat content, including the moisture the coil must also remove',
+    'Wet bulb is easier to measure accurately',
+    'Dry bulb varies too much through the day',
+    'Wet bulb is the same as the coil temperature',
+  ],
+  answer: 0,
+  explain:
+    'The coil does two jobs: lowering temperature and condensing moisture. Dry bulb only describes ' +
+    'the first.\n\n' +
+    'Wet bulb captures the total heat content of the entering air — sensible and latent together — ' +
+    'which is what actually determines how hard the evaporator is working, and therefore what ' +
+    'superheat it should be running.\n\n' +
+    'Using dry bulb gives the wrong target, and in a humid climate it can be wrong by a lot. That ' +
+    'is why a psychrometer belongs in the bag alongside the gauges.',
+  source: cite.todo('Confirm against a manufacturer superheat charging chart.'),
+  status: 'draft',
+});
+
+const subcoolingCalculation = defineQuestion({
+  ...T,
+  id: 'hvac.4.3.subcool-target-check',
+  objective: '4.3',
+  kind: 'input',
+  difficulty: 2,
+  prompt:
+    'An R-410A TXV system reads 340 psig on the high side (≈105°F saturation) and the liquid line ' +
+    'measures 95°F.\n\nWhat is the subcooling, in °F?',
+  placeholder: '°F',
+  accept: ['10'],
+  tolerance: 2,
+  explain:
+    'Subcooling = condensing temperature − liquid line temperature = 105 − 95 = **10°F**.\n\n' +
+    'That sits right in the 8–12°F target band, so on a TXV system this says the charge is ' +
+    'correct. Check the nameplate — many manufacturers specify a subcooling target, and it takes ' +
+    'precedence over the generic band.',
+  source: cite.standard('Arithmetic: 105 − 95'),
+  status: 'verified',
+});
+
+const chargeInWrongWeather = defineQuestion({
+  ...T,
+  id: 'hvac.4.3.low-ambient-charging',
+  objective: '4.3',
+  kind: 'choice',
+  difficulty: 3,
+  prompt:
+    'It is 55°F outside and you need to verify the charge on a cooling system.\n\n' +
+    'What is the problem, and what should you do?',
+  choices: [
+    'Charging charts assume higher ambients; weigh the charge in instead, or use a low-ambient procedure',
+    'Nothing — charge by superheat as usual',
+    'Add refrigerant until suction pressure looks normal for summer',
+    'Wait for the system to reach steady state, then charge normally',
+  ],
+  answer: 0,
+  explain:
+    'Below roughly 65°F outdoor ambient, the readings a charging chart expects do not appear. Head ' +
+    'pressure is low, the system may not even run properly, and superheat and subcooling both ' +
+    'drift outside their normal relationships.\n\n' +
+    'The reliable answer is to **weigh it in**: recover, evacuate, and put in the nameplate charge ' +
+    'with the line-set adjustment. That is accurate regardless of weather.\n\n' +
+    'Some manufacturers publish a low-ambient charging procedure, sometimes involving temporarily ' +
+    'restricting condenser airflow. Where one exists, follow it rather than improvising.',
+  source: cite.todo('Confirm low-ambient charging guidance against your text and manufacturer literature.'),
+  status: 'draft',
+});
+
+// --- more 4.4 / 4.5 ---------------------------------------------------------
+
+const lineSetShort = defineQuestion({
+  ...T,
+  id: 'hvac.4.4.short-line-set',
+  objective: '4.4',
+  kind: 'choice',
+  difficulty: 2,
+  prompt:
+    'A nameplate reads "factory charge 6 lb 0 oz for 15 ft of line set". The installed line set is ' +
+    '10 ft.\n\nWhat should you do?',
+  choices: [
+    'Check the manufacturer instructions — some specify removing charge for runs shorter than the base length',
+    'Add the full 6 lb regardless; short runs need no adjustment',
+    'Reduce the charge by a fixed 10%',
+    'Add extra charge, since a shorter line set restricts flow',
+  ],
+  answer: 0,
+  explain:
+    'The nameplate figure covers the equipment plus a stated length of line set. A run shorter than ' +
+    'that holds less refrigerant, and some manufacturers do specify a deduction.\n\n' +
+    'Many say nothing, in which case the base charge stands — the difference over a few feet is ' +
+    'usually within tolerance. The point is that you read the instructions rather than assume ' +
+    'either way.\n\n' +
+    'Verify with subcooling once it is running. Weighing in establishes the charge; the readings ' +
+    'confirm it.',
+  source: cite.todo('Confirm line set adjustment guidance against manufacturer literature.'),
+  status: 'draft',
+});
+
+const restrictionNotLeak = defineQuestion({
+  ...T,
+  id: 'hvac.4.5.dont-add-to-restriction',
+  objective: '4.5',
+  kind: 'choice',
+  difficulty: 3,
+  prompt:
+    'A system shows 30°F superheat and 20°F subcooling.\n\n' +
+    'A technician adds two pounds of refrigerant because the superheat is high. What happens?',
+  choices: [
+    'It gets worse — the restriction is unchanged and the system is now overcharged as well',
+    'Superheat comes down and the problem is solved',
+    'Nothing changes, since the restriction controls flow',
+    'The extra charge clears the restriction',
+  ],
+  answer: 0,
+  explain:
+    'High superheat with **high** subcooling is a restriction, not an undercharge. Refrigerant is ' +
+    'backing up behind the blockage — which is exactly why subcooling is high.\n\n' +
+    'Adding more refrigerant does not open the restriction. It stacks even more liquid in the ' +
+    'condenser, driving head pressure and subcooling higher still, while the evaporator stays just ' +
+    'as starved.\n\n' +
+    'Then when somebody eventually finds and clears the restriction, the system is badly ' +
+    'overcharged and has to be recovered down. Reading superheat alone, without subcooling, is how ' +
+    'this happens.',
+  source: cite.todo('Confirm the restriction signature against your service text.'),
+  status: 'draft',
+});
+
+const flashGas = defineQuestion({
+  ...T,
+  id: 'hvac.4.5.flash-gas',
+  objective: '4.5',
+  kind: 'choice',
+  difficulty: 3,
+  prompt:
+    'A system has adequate charge but the liquid line is long with a significant vertical rise. It ' +
+    'behaves as though it were undercharged.\n\nWhat is likely happening?',
+  choices: [
+    'Flash gas — pressure drop in the line is vaporising some liquid before it reaches the metering device',
+    'The refrigerant is leaking from the vertical section',
+    'The compressor cannot lift refrigerant that high',
+    'The metering device is too large',
+  ],
+  answer: 0,
+  explain:
+    'A metering device is sized to pass liquid. If refrigerant arrives at or near saturation, any ' +
+    'pressure drop — a long run, a vertical lift, a restrictive drier — flashes some of it to ' +
+    'vapour.\n\n' +
+    'Vapour occupies far more volume than liquid, so the device passes much less refrigerant than ' +
+    'it should, and the evaporator starves. The symptom looks exactly like an undercharge.\n\n' +
+    'Subcooling is the margin that prevents it: more subcooling means more room to lose pressure ' +
+    'before reaching saturation. This is why a long or lifted liquid line needs a healthy ' +
+    'subcooling figure rather than a marginal one.',
+  source: cite.todo('Confirm the flash gas discussion against your text.'),
+  status: 'draft',
+});
+
 export const SECTOR_4_QUESTIONS: readonly Question[] = [
   meteringComparison,
   txvComponents,
+  looseBulb,
+  bulbPosition,
+  eevAdvantage,
   whichMethod,
   fixedOrificeCharging,
+  wetBulbNotDry,
+  subcoolingCalculation,
+  chargeInWrongWeather,
   weighInCharge,
+  lineSetShort,
   chargeSignatures,
+  restrictionNotLeak,
   overchargeConsequence,
+  flashGas,
   nonCondensableCause,
 ];

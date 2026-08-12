@@ -54,6 +54,19 @@ export function renderHome(ctx: HomeContext): HTMLElement {
 
   // --- track switcher ------------------------------------------------------
   if (ctx.tracks.length > 1) {
+    if (ctx.track.archived) {
+      root.appendChild(
+        h(
+          'div',
+          { class: 'panel archived-notice' },
+          h('strong', { text: 'This track is archived.' }),
+          h('span', {
+            text: ' It still works and your progress is kept, but it is no longer the focus.',
+          }),
+        ),
+      );
+    }
+
     const tabs = h('nav', { class: 'track-tabs' });
     for (const track of ctx.tracks) {
       const count = ctx.pool.filter((q) => q.track === track.id).length;

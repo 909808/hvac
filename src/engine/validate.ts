@@ -201,6 +201,19 @@ export function validateContent(input: ValidateInput): ValidationReport {
         }
         break;
       }
+
+      case 'hotspot': {
+        const ids = new Set(q.topology.nodes.map((n) => n.id));
+        if (ids.size < 2) err(at, 'hotspot question needs at least 2 clickable nodes');
+        if (!ids.has(q.answer)) {
+          err(at, `answer "${q.answer}" is not a node in the diagram`);
+        }
+        for (const key of Object.keys(q.whyWrong ?? {})) {
+          if (!ids.has(key)) err(at, `whyWrong references unknown node "${key}"`);
+          else if (key === q.answer) err(at, `whyWrong explains "${key}", which is the answer`);
+        }
+        break;
+      }
     }
 
     if (q.topology) checkTopology(q.topology, at, err);

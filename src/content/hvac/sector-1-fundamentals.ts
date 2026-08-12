@@ -344,17 +344,303 @@ const lockoutTagout = defineQuestion({
   status: 'verified',
 });
 
+// --- more 1.1 / 1.2 --------------------------------------------------------
+
+const specificHeatWater = defineQuestion({
+  ...T,
+  id: 'hvac.1.1.specific-heat-comparison',
+  objective: '1.1',
+  kind: 'choice',
+  difficulty: 2,
+  prompt:
+    'Water has a specific heat of 1.0 BTU/lb·°F and air 0.24 BTU/lb·°F.\n\n' +
+    'What does that difference mean in practice?',
+  choices: [
+    'A pound of water absorbs about four times the heat of a pound of air for the same temperature rise',
+    'Water heats up four times faster than air',
+    'Air is a better heat-transfer medium than water',
+    'Water can only be used below 212°F',
+  ],
+  answer: 0,
+  whyWrong: {
+    1: 'It is the opposite — water takes more energy per degree, so it heats up more slowly.',
+    2: 'Air carries far less heat per unit mass and is far less dense on top of that.',
+    3: 'Specific heat says nothing about the useful temperature range.',
+  },
+  explain:
+    'Specific heat is how much energy one pound absorbs per degree. Water needs four times what ' +
+    'air needs — and water is also roughly 800 times denser, so per unit *volume* the gap is ' +
+    'enormous.\n\n' +
+    'That is the whole argument for hydronic distribution in a large building: a small pipe of ' +
+    'water carries what would need a very large duct of air.',
+  source: cite.standard('Specific heat values — standard reference data'),
+  status: 'verified',
+});
+
+const heatOfFusion = defineQuestion({
+  ...T,
+  id: 'hvac.1.2.melting-ice-energy',
+  objective: '1.2',
+  kind: 'input',
+  difficulty: 2,
+  prompt:
+    'How much heat does it take to melt 10 pounds of ice at 32°F into 10 pounds of water at 32°F?\n\n' +
+    'Answer in BTU.',
+  placeholder: 'BTU',
+  accept: ['1440'],
+  tolerance: 20,
+  explain:
+    'Latent heat of fusion is 144 BTU per pound. 10 × 144 = 1,440 BTU.\n\n' +
+    'Note the temperature never changes — it is 32°F before and 32°F after. Every one of those ' +
+    '1,440 BTU went into breaking the bonds that made it a solid, and none into raising ' +
+    'temperature. That is what latent heat means.',
+  source: cite.standard('Latent heat of fusion of water: 144 BTU/lb'),
+  status: 'verified',
+});
+
+const evaporatorLatent = defineQuestion({
+  ...T,
+  id: 'hvac.1.2.why-boiling-matters',
+  objective: '1.2',
+  kind: 'choice',
+  difficulty: 3,
+  prompt:
+    'Why does a refrigeration system boil its refrigerant rather than simply circulating a cold liquid?',
+  choices: [
+    'A change of state absorbs far more heat per pound than warming a liquid does',
+    'Boiling makes the refrigerant move faster through the pipes',
+    'Liquid refrigerant would damage the evaporator',
+    'It is a legal requirement for efficiency ratings',
+  ],
+  answer: 0,
+  explain:
+    'Compare the numbers. Warming a pound of water across its entire liquid range, 32°F to 212°F, ' +
+    'takes 180 BTU. Boiling that same pound takes another 970.\n\n' +
+    'A change of state moves several times more energy than heating a liquid ever could. That is ' +
+    'why a small copper line can carry the heat of a whole house — and why superheat matters, ' +
+    'because once the refrigerant has fully boiled, the coil beyond that point is doing very ' +
+    'little.',
+  source: cite.standard('Latent heat of vaporisation vs. sensible heat of liquid water'),
+  status: 'verified',
+});
+
+// --- more 1.3 --------------------------------------------------------------
+
+const psiaConversion = defineQuestion({
+  ...T,
+  id: 'hvac.1.3.psia-conversion',
+  objective: '1.3',
+  kind: 'input',
+  difficulty: 1,
+  prompt:
+    'A gauge reads 68 psig at sea level.\n\nWhat is the absolute pressure, in psia?',
+  placeholder: 'psia',
+  accept: ['82.7'],
+  tolerance: 0.5,
+  explain:
+    'psia = psig + 14.7, so 68 + 14.7 = 82.7 psia.\n\n' +
+    'Gauge pressure is measured relative to the atmosphere around you; absolute is measured from ' +
+    'a true vacuum. For everyday charging work gauge pressure is what you want, and the ' +
+    'distinction rarely comes up — except during evacuation, where the whole useful range lives ' +
+    'below 0 psig.',
+  source: cite.standard('Standard atmosphere: 14.696 psia at sea level'),
+  status: 'verified',
+});
+
+const decayTestReading = defineQuestion({
+  ...T,
+  id: 'hvac.1.3.decay-test-interpretation',
+  objective: '1.3',
+  kind: 'choice',
+  difficulty: 3,
+  prompt:
+    'You pull a system to 450 microns and valve off the pump. Over the next ten minutes the reading ' +
+    'climbs steadily and shows no sign of levelling off.\n\nWhat does that indicate?',
+  choices: [
+    'A leak — the system is pulling toward atmospheric pressure',
+    'Moisture still boiling off',
+    'A normal, healthy result',
+    'The micron gauge needs recalibrating',
+  ],
+  whyWrong: {
+    1: 'Moisture is a finite source, so it plateaus. A continuous climb is not moisture.',
+    2: 'A healthy system holds close to where you left it.',
+    3: 'Possible but far less likely than the obvious physical explanation.',
+  },
+  answer: 0,
+  explain:
+    'The shape of the curve is the diagnosis:\n\n' +
+    '**Holds steady** → dry and tight. Done.\n' +
+    '**Rises then plateaus** around 1,500–2,000 microns → moisture still boiling off. Keep pumping.\n' +
+    '**Rises without levelling** → a leak, pulling toward atmospheric.\n\n' +
+    'A finite amount of water reaches equilibrium. A leak has the whole atmosphere behind it and ' +
+    'never settles.',
+  source: cite.todo('Confirm the decay test interpretation against your text.'),
+  status: 'draft',
+});
+
+// --- more 1.4 --------------------------------------------------------------
+
+const dirtyCoilConduction = defineQuestion({
+  ...T,
+  id: 'hvac.1.4.why-dirt-matters',
+  objective: '1.4',
+  kind: 'choice',
+  difficulty: 2,
+  prompt:
+    'Why does a thin layer of dirt on a coil hurt performance so much more than its thickness suggests?',
+  choices: [
+    'Dirt is an insulator sitting exactly where conduction has to happen',
+    'Dirt adds weight to the coil',
+    'Dirt reacts chemically with the refrigerant',
+    'Dirt changes the refrigerant flow rate',
+  ],
+  answer: 0,
+  explain:
+    'A coil is a conduction device with convection on both sides — air to metal, metal to ' +
+    'refrigerant. The heat has to cross that metal wall, and every layer of dirt is thermal ' +
+    'resistance in series with it.\n\n' +
+    'On a condenser this raises condensing temperature and head pressure. On an evaporator it ' +
+    'lowers coil temperature toward freezing. Both also restrict airflow, so you get two problems ' +
+    'from one cause.',
+  source: cite.todo('Confirm the heat transfer discussion against your text.'),
+  status: 'draft',
+});
+
+// --- more 1.5 / 1.6 ---------------------------------------------------------
+
+const wetBulbInstrument = defineQuestion({
+  ...T,
+  id: 'hvac.1.5.psychrometer-purpose',
+  objective: '1.5',
+  kind: 'choice',
+  difficulty: 2,
+  prompt:
+    'A sling psychrometer has two thermometers, one with a wet sock over the bulb.\n\n' +
+    'Why does the wet one read lower?',
+  choices: [
+    'Water evaporating off the sock absorbs heat from the bulb',
+    'The wet sock insulates the bulb from the air',
+    'Water is colder than air',
+    'The sock blocks radiant heat',
+  ],
+  answer: 0,
+  explain:
+    'Evaporation absorbs latent heat, and it takes that heat from whatever it is evaporating off ' +
+    '— in this case the thermometer bulb.\n\n' +
+    'How much it cools depends on how much more moisture the surrounding air can accept. Dry air ' +
+    'means lots of evaporation and a big drop. Saturated air means none at all, and the two ' +
+    'thermometers read the same.\n\n' +
+    'That gap between dry bulb and wet bulb is a direct measure of how dry the air is, which is ' +
+    'why one instrument gives you two of the six psychrometric properties.',
+  source: cite.standard('Evaporative cooling — ASHRAE Handbook Fundamentals Ch. 1'),
+  status: 'verified',
+});
+
+const nitrogenNotOxygen = defineQuestion({
+  ...T,
+  id: 'hvac.1.6.never-oxygen',
+  objective: '1.6',
+  kind: 'choice',
+  difficulty: 2,
+  prompt:
+    'Why must oxygen never be used to pressure-test a refrigeration system?',
+  choices: [
+    'Oxygen under pressure in contact with oil combusts violently',
+    'Oxygen would contaminate the refrigerant',
+    'Oxygen leaks too quickly to be useful',
+    'Oxygen cylinders are not rated for the pressure',
+  ],
+  answer: 0,
+  explain:
+    'This is not a subtle risk. Oxygen under pressure meeting the oil that is inside every ' +
+    'refrigeration system produces violent combustion — people have been killed doing this.\n\n' +
+    'Use **dry nitrogen with a regulator**. Always a regulator: cylinder pressure runs into the ' +
+    'thousands of psi and will burst a component instantly.\n\n' +
+    'Compressed air is also wrong — it carries moisture, and with refrigerant present it can form ' +
+    'a combustible mixture under pressure.',
+  source: cite.todo('Confirm pressure-testing practice against your safety text.'),
+  status: 'draft',
+});
+
+const confinedSpace = defineQuestion({
+  ...T,
+  id: 'hvac.1.6.vapour-pools-low',
+  objective: '1.6',
+  kind: 'choice',
+  difficulty: 3,
+  prompt:
+    'A large refrigerant leak has occurred in a basement mechanical room.\n\n' +
+    'What is the specific hazard, and why is it easy to miss?',
+  choices: [
+    'Vapour is heavier than air and pools low, displacing oxygen with no smell to warn you',
+    'Vapour rises and escapes, so there is no hazard indoors',
+    'The vapour is flammable and may ignite from a light switch',
+    'The main risk is frostbite from breathing cold vapour',
+  ],
+  answer: 0,
+  whyWrong: {
+    1: 'Refrigerant vapour is denser than air and sinks.',
+    2: 'Common HFC and HCFC refrigerants are not flammable under normal conditions.',
+    3: 'Frostbite is a liquid-contact hazard, not an inhalation one.',
+  },
+  explain:
+    'Refrigerant vapour is heavier than air. It pools in basements, crawl spaces, pits and ' +
+    'trenches, and it displaces oxygen. There is no warning smell and no immediate discomfort — ' +
+    'the first symptom is often confusion, by which point you may not be able to act on it.\n\n' +
+    'This is why ventilation and, in commercial machinery rooms, refrigerant monitors exist. If ' +
+    'a large leak is suspected in a low space, ventilate before you enter.',
+  source: cite.todo('Confirm the asphyxiation hazard discussion against your safety text and ASHRAE 15.'),
+  status: 'draft',
+});
+
+const meterVerify = defineQuestion({
+  ...T,
+  id: 'hvac.1.6.why-second-live-test',
+  objective: '1.6',
+  kind: 'choice',
+  difficulty: 3,
+  prompt:
+    'The live–dead–live procedure ends by testing your meter on a known live source again.\n\n' +
+    'Why is that final step the important one?',
+  choices: [
+    'A meter that failed between readings would show zero volts on an energised circuit',
+    'It confirms the circuit is still de-energised',
+    'It discharges any stored energy in the meter',
+    'It is required to reset the meter between measurements',
+  ],
+  answer: 0,
+  explain:
+    'A blown fuse, a flat battery or a broken lead all produce the same reading as a dead circuit: ' +
+    'zero volts.\n\n' +
+    'Without the final check, "the meter read zero" and "the circuit is dead" are not the same ' +
+    'statement — and the gap between them is where people get hurt. Testing the meter afterwards ' +
+    'proves it was still working when it told you the circuit was safe.',
+  source: cite.standard('NFPA 70E electrical safety practice'),
+  status: 'verified',
+});
+
 export const SECTOR_1_QUESTIONS: readonly Question[] = [
   heatVsTemp,
   btuDefinition,
   tonOfCooling,
+  specificHeatWater,
   sensibleVsLatent,
   changeOfState,
+  heatOfFusion,
+  evaporatorLatent,
   gaugeVsAbsolute,
+  psiaConversion,
   micronTarget,
+  decayTestReading,
   waterBoilingVacuum,
   heatTransferModes,
+  dirtyCoilConduction,
   instrumentUse,
+  wetBulbInstrument,
   refrigerantSafety,
+  nitrogenNotOxygen,
+  confinedSpace,
   lockoutTagout,
+  meterVerify,
 ];

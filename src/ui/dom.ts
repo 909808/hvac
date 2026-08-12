@@ -53,9 +53,51 @@ export function clear(el: Element): void {
 export function paragraphs(text: string, className: string): HTMLElement {
   const wrap = h('div', { class: className });
   for (const block of text.split('\n\n')) {
-    wrap.appendChild(h('p', { class: 'pre-line', text: block }));
+    const p = h('p', { class: 'pre-line' });
+    appendInline(p, block);
+    wrap.appendChild(p);
   }
   return wrap;
+}
+
+/**
+ * Minimal inline emphasis: `**bold**` and `*italic*`.
+ *
+ * Content is written as prose with the occasional emphasised term, and authors
+ * reach for markdown by reflex. Rather than ban it, this renders the two forms
+ * that actually get used.
+ *
+ * Built as DOM nodes rather than innerHTML — the content is ours, but there is
+ * no reason to introduce an HTML injection path for the sake of two tags.
+ */
+export function appendInline(parent: Node, text: string): void {
+  // Bold first so ** is not consumed by the single-asterisk rule.
+  const pattern = /\*\*([^*]+)\*\*|\*([^*\n]+)\*/g;
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = pattern.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parent.appendChild(document.createTextNode(text.slice(lastIndex, match.index)));
+    }
+    if (match[1] !== undefined) {
+      parent.appendChild(h('strong', { text: match[1] }));
+    } else if (match[2] !== undefined) {
+      parent.appendChild(h('em', { text: match[2] }));
+    }
+    lastIndex = pattern.lastIndex;
+  }
+
+  if (lastIndex < text.length) {
+    parent.appendChild(document.createTextNode(text.slice(lastIndex)));
+  }
+}
+
+/** A span with inline emphasis applied. */
+export function inline(text: string, className?: string): HTMLElement {
+  const el = h('span', className ? { class: className } : {});
+  appendInline(el, text);
+  return el;
 }
 
 export function formatDuration(totalSeconds: number): string {

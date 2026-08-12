@@ -64,7 +64,9 @@ export function renderPlay(ctx: PlayContext): HTMLElement {
     ),
   );
 
-  if (question.topology) {
+  // A hotspot question renders its own diagram as the answer widget, so drawing
+  // it here as well would show it twice.
+  if (question.topology && question.kind !== 'hotspot') {
     const figure = h('figure', { class: 'topology-wrap' }, renderTopology(question.topology));
     if (question.topology.caption) {
       figure.appendChild(h('figcaption', { text: question.topology.caption }));
@@ -160,7 +162,40 @@ function renderWidget(ctx: PlayContext, question: Question, revealed: boolean): 
       return orderWidget(ctx, question, revealed);
     case 'match':
       return matchWidget(ctx, question, revealed);
+    case 'hotspot':
+      return hotspotWidget(ctx, question, revealed);
   }
+}
+
+function hotspotWidget(ctx: PlayContext, question: Question, revealed: boolean): HTMLElement {
+  if (question.kind !== 'hotspot') throw new Error('wrong widget');
+  const snap = ctx.session.snapshot();
+  const last = snap.answered[snap.answered.length - 1];
+  const chosen = revealed && last?.response.kind === 'hotspot' ? last.response.nodeId : undefined;
+
+  const wrap = h('div', { class: 'hotspot' });
+
+  wrap.appendChild(
+    h(
+      'figure',
+      { class: 'topology-wrap' },
+      renderTopology(question.topology, {
+        onPick: (nodeId) => ctx.onAnswer({ kind: 'hotspot', nodeId }),
+        disabled: revealed,
+        ...(revealed ? { correct: question.answer } : {}),
+        ...(chosen ? { chosen } : {}),
+      }),
+    ),
+  );
+
+  if (!revealed) {
+    wrap.appendChild(h('p', { class: 'hint', text: 'Click the component on the diagram.' }));
+  } else if (chosen && chosen !== question.answer) {
+    const note = question.whyWrong?.[chosen];
+    if (note) wrap.appendChild(h('p', { class: 'choice-note', text: note }));
+  }
+
+  return wrap;
 }
 
 /**

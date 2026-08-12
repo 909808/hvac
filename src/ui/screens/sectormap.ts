@@ -1,3 +1,4 @@
+import { lessonMinutes, lessonsFor, type Lesson } from '@engine/lesson';
 import { levelFor, type Profile } from '@engine/profile';
 import { overallProgress, sectorProgress, unlockedLabs, type SectorProgress } from '@engine/progression';
 import type { Question, Track } from '@engine/types';
@@ -9,7 +10,9 @@ export interface SectorMapContext {
   readonly track: Track;
   readonly tracks: readonly Track[];
   readonly pool: readonly Question[];
+  readonly lessons: readonly Lesson[];
   readonly profile: Profile;
+  onStartLesson(sectorId: string): void;
   onStartDrill(sectorId: string): void;
   onStartCheckpoint(sectorId: string): void;
   onStartLab(mode: ModeId): void;
@@ -73,23 +76,44 @@ export function renderSectorMap(ctx: SectorMapContext): HTMLElement {
   );
 
   // --- track switcher ------------------------------------------------------
-  if (ctx.tracks.length > 1) {
+  // Archived tracks stay reachable but out of the way, behind a details toggle.
+  const active = ctx.tracks.filter((t) => !t.archived);
+  const archived = ctx.tracks.filter((t) => t.archived);
+
+  const trackButton = (track: (typeof ctx.tracks)[number]) => {
+    const count = ctx.pool.filter((q) => q.track === track.id).length;
+    return h(
+      'button',
+      {
+        class: `track-tab ${track.id === ctx.track.id ? 'track-tab-active' : ''}`,
+        onClick: () => ctx.onSelectTrack(track.id),
+      },
+      h('span', { text: track.title }),
+      h('span', { class: 'track-count', text: count === 0 ? 'empty' : `${count}` }),
+    );
+  };
+
+  if (active.length > 1) {
     const tabs = h('nav', { class: 'track-tabs' });
-    for (const track of ctx.tracks) {
-      const count = ctx.pool.filter((q) => q.track === track.id).length;
-      tabs.appendChild(
-        h(
-          'button',
-          {
-            class: `track-tab ${track.id === ctx.track.id ? 'track-tab-active' : ''}`,
-            onClick: () => ctx.onSelectTrack(track.id),
-          },
-          h('span', { text: track.title }),
-          h('span', { class: 'track-count', text: count === 0 ? 'empty' : `${count}` }),
-        ),
-      );
-    }
+    for (const track of active) tabs.appendChild(trackButton(track));
     root.appendChild(tabs);
+  }
+
+  if (archived.length > 0) {
+    const shelf = h('details', { class: 'archived-shelf' });
+    shelf.appendChild(
+      h('summary', { text: `Archived tracks (${archived.length})` }),
+    );
+    const tabs = h('nav', { class: 'track-tabs' });
+    for (const track of archived) tabs.appendChild(trackButton(track));
+    shelf.appendChild(tabs);
+    shelf.appendChild(
+      h('p', {
+        class: 'panel-note',
+        text: 'Shelved, not deleted. Content and progress are intact if you ever want them back.',
+      }),
+    );
+    root.appendChild(shelf);
   }
 
   // --- labs ----------------------------------------------------------------
@@ -165,7 +189,9 @@ export function renderSectorMap(ctx: SectorMapContext): HTMLElement {
   );
 
   const list = h('div', { class: 'sector-list' });
-  for (const entry of progress) list.appendChild(renderSector(ctx, entry));
+  for (const entry of progress) {
+    list.appendChild(renderSector(ctx, entry, lessonsFor(ctx.lessons, ctx.track.id, entry.sector.id)));
+  }
   path.appendChild(list);
   root.appendChild(path);
 
@@ -205,7 +231,11 @@ export function renderSectorMap(ctx: SectorMapContext): HTMLElement {
   return root;
 }
 
-function renderSector(ctx: SectorMapContext, entry: SectorProgress): HTMLElement {
+function renderSector(
+  ctx: SectorMapContext,
+  entry: SectorProgress,
+  lessons: readonly Lesson[],
+): HTMLElement {
   const { sector, status, questionCount, record } = entry;
   const locked = status === 'locked';
 
@@ -230,7 +260,13 @@ function renderSector(ctx: SectorMapContext, entry: SectorProgress): HTMLElement
         : locked
           ? h('span', { class: 'sector-badge badge-locked', text: '🔒 locked' })
           : h('span', { class: 'sector-badge badge-open', text: 'open' }),
-      h('span', { class: 'sector-count', text: `${questionCount} q` }),
+      h('span', {
+        class: 'sector-count',
+        text:
+          lessons.length > 0
+            ? `${lessons.length} lesson${lessons.length === 1 ? '' : 's'} · ${questionCount} q`
+            : `${questionCount} q`,
+      }),
     ),
   );
   card.appendChild(head);
@@ -244,21 +280,33 @@ function renderSector(ctx: SectorMapContext, entry: SectorProgress): HTMLElement
 
   const actions = h('div', { class: 'sector-actions' });
 
+  // Learn comes first, and is the primary action until the sector is passed —
+  // the whole point is that you read before you are tested.
+  if (lessons.length > 0) {
+    actions.appendChild(
+      h('button', {
+        class: `btn ${status === 'passed' ? 'btn-ghost' : 'btn-primary'}`,
+        onClick: () => ctx.onStartLesson(sector.id),
+        text: `Learn · ${lessonMinutes(lessons)} min`,
+      }),
+    );
+  }
+
   actions.appendChild(
     h('button', {
       class: 'btn btn-ghost',
       disabled: questionCount === 0,
       onClick: () => ctx.onStartDrill(sector.id),
-      text: 'Study',
+      text: 'Practise',
     }),
   );
 
   actions.appendChild(
     h('button', {
-      class: `btn ${status === 'passed' ? 'btn-ghost' : 'btn-primary'}`,
+      class: 'btn btn-ghost',
       disabled: questionCount === 0,
       onClick: () => ctx.onStartCheckpoint(sector.id),
-      text: status === 'passed' ? 'Retake checkpoint' : 'Take checkpoint',
+      text: status === 'passed' ? 'Retake checkpoint' : 'Checkpoint',
     }),
   );
 

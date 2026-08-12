@@ -1,9 +1,36 @@
 import { cite, defineQuestion } from '@engine/define';
-import type { Question } from '@engine/types';
+import type { Question, Topology } from '@engine/types';
 
 /** Sector 8 — Heating: Furnaces & Boilers. */
 
 const T = { track: 'hvac', domain: '8.0' } as const;
+
+/**
+ * The furnace safety chain. Each stage must prove itself before the next is
+ * allowed, which is what makes "where did it stop?" such a fast diagnosis.
+ *
+ * Deliberately duplicated from the sector 8 lesson rather than shared: the
+ * lesson version may gain annotations that would be wrong on a question, and a
+ * diagram is cheap.
+ */
+const furnaceChain: Topology = {
+  caption: 'Each stage proves itself before the next is allowed to run',
+  nodes: [
+    { id: 'tstat', kind: 'thermostat', label: 'W call', col: 0, row: 1 },
+    { id: 'ind', kind: 'fan', label: 'Inducer', sublabel: 'purge', col: 1, row: 1 },
+    { id: 'ps', kind: 'sensor', label: 'Pressure sw.', sublabel: 'proves draft', col: 2, row: 1 },
+    { id: 'ign', kind: 'controller', label: 'Igniter', sublabel: 'heats up', col: 3, row: 1 },
+    { id: 'gas', kind: 'metering', label: 'Gas valve', sublabel: 'opens', col: 4, row: 1 },
+    { id: 'flame', kind: 'sensor', label: 'Flame sensor', sublabel: 'proves flame', col: 5, row: 1 },
+  ],
+  links: [
+    { from: 'tstat', to: 'ind' },
+    { from: 'ind', to: 'ps' },
+    { from: 'ps', to: 'ign' },
+    { from: 'ign', to: 'gas' },
+    { from: 'gas', to: 'flame' },
+  ],
+};
 
 // --- 8.1 Combustion --------------------------------------------------------------
 
@@ -291,15 +318,334 @@ const electricHeatSequencer = defineQuestion({
   status: 'draft',
 });
 
+// --- hotspot on the furnace chain -------------------------------------------
+
+const findFlameProof = defineQuestion({
+  ...T,
+  id: 'hvac.8.2.hotspot-flame-proving',
+  objective: '8.2',
+  kind: 'hotspot',
+  difficulty: 2,
+  topology: furnaceChain,
+  prompt:
+    'A furnace lights and then shuts down after a few seconds, repeatedly.\n\n' +
+    'Click the component that is failing to do its job.',
+  answer: 'flame',
+  whyWrong: {
+    ind: 'The inducer clearly ran — the sequence got as far as lighting.',
+    ps: 'The pressure switch clearly closed, or the gas valve would never have opened.',
+    ign: 'The igniter clearly worked — the burners lit.',
+    gas: 'The gas valve clearly opened. The problem is what happened after.',
+  },
+  explain:
+    'The burners lit, which proves the thermostat, inducer, pressure switch, igniter and gas valve ' +
+    'all worked. What failed is the **proof of flame**.\n\n' +
+    'Flame rectification passes a tiny DC current — microamps — from the sensor through the flame ' +
+    'to the grounded burner. Oxide film on the sensor blocks it, as does a poor burner ground. The ' +
+    'board sees no flame, closes the gas valve, and retries.\n\n' +
+    'One observation eliminated five of six steps. That is what knowing the sequence buys you.',
+  source: cite.todo('Confirm the flame proving discussion against your text.'),
+  status: 'draft',
+});
+
+const findPurgeProof = defineQuestion({
+  ...T,
+  id: 'hvac.8.2.hotspot-pressure-switch',
+  objective: '8.2',
+  kind: 'hotspot',
+  difficulty: 3,
+  topology: furnaceChain,
+  prompt:
+    'The inducer runs but the igniter never glows and the gas valve never opens.\n\n' +
+    'Click the component most likely blocking the sequence.',
+  answer: 'ps',
+  whyWrong: {
+    ind: 'The inducer is running, so it is doing its job.',
+    ign: 'The igniter is downstream of the blockage — it never got permission to energise.',
+    gas: 'The gas valve is further downstream still.',
+    flame: 'Flame proving comes after ignition, which never happened.',
+  },
+  explain:
+    'The inducer runs, so the call and the inducer circuit are fine. The next step in the chain is ' +
+    'the **pressure switch**, which must close to prove the inducer is actually moving air before ' +
+    'the board will allow ignition.\n\n' +
+    'If it does not close, everything downstream stays dead — which is exactly the symptom.\n\n' +
+    'Causes: a blocked or cracked hose to the switch, a blocked flue or intake, a failed switch, ' +
+    'or on a condensing furnace a **blocked condensate drain** backing water up into the pressure ' +
+    'switch circuit. That last one is one of the most common no-heat calls on high-efficiency ' +
+    'equipment.',
+  source: cite.todo('Confirm the pressure switch failure modes against your text.'),
+  status: 'draft',
+});
+
+// --- more 8.1 ---------------------------------------------------------------
+
+const incompleteC0 = defineQuestion({
+  ...T,
+  id: 'hvac.8.1.carbon-monoxide',
+  objective: '8.1',
+  kind: 'choice',
+  difficulty: 2,
+  prompt: 'What does incomplete combustion of natural gas produce, and what causes it?',
+  choices: [
+    'Carbon monoxide, usually from insufficient combustion air',
+    'Carbon dioxide, from excess air',
+    'Nitrogen oxides, from low manifold pressure',
+    'Water vapour, from a cold heat exchanger',
+  ],
+  answer: 0,
+  explain:
+    'Complete combustion of natural gas produces carbon dioxide and water vapour, both harmless in ' +
+    'this context. **Incomplete** combustion produces carbon monoxide.\n\n' +
+    'The usual cause is not enough air — a blocked flue, inadequate combustion air openings, a ' +
+    'dirty burner, or a cracked heat exchanger disturbing the flame.\n\n' +
+    'CO is colourless and odourless. This is why combustion air is a life-safety requirement rather ' +
+    'than an efficiency preference, and why a combustion analyser is the instrument that actually ' +
+    'answers the question.',
+  source: cite.todo('Confirm the combustion discussion against your text.'),
+  status: 'draft',
+});
+
+const clockingMeter = defineQuestion({
+  ...T,
+  id: 'hvac.8.1.clocking-the-meter',
+  objective: '8.1',
+  kind: 'choice',
+  difficulty: 3,
+  prompt:
+    'Why would you clock the gas meter on a furnace, and what does it tell you?',
+  choices: [
+    'It measures the actual firing rate in BTU/h, which is the honest check on whether the furnace matches nameplate input',
+    'It measures the efficiency of the heat exchanger',
+    'It measures flue gas temperature indirectly',
+    'It confirms the manifold pressure is correct',
+  ],
+  answer: 0,
+  explain:
+    'You time how long the meter takes to pass a known volume — one cubic foot, say — with every ' +
+    'other gas appliance off. From that you get cubic feet per hour, and at roughly 1,000 BTU/ft³ ' +
+    'you get the actual input.\n\n' +
+    'That is the real firing rate, not what the nameplate claims. Overfiring wastes fuel and can ' +
+    'crack a heat exchanger; underfiring means the furnace cannot meet the load.\n\n' +
+    'Verify the local heating value with the utility — it varies by supply, and 1,000 BTU/ft³ is a ' +
+    'nominal figure rather than a constant.',
+  source: cite.todo('Confirm the clocking procedure against your text.'),
+  status: 'draft',
+});
+
+// --- more 8.2 / 8.3 ---------------------------------------------------------
+
+const blowerOffDelay = defineQuestion({
+  ...T,
+  id: 'hvac.8.2.blower-delays',
+  objective: '8.2',
+  kind: 'choice',
+  difficulty: 2,
+  prompt: 'Why does a furnace blower keep running for a period after the gas valve closes?',
+  choices: [
+    'To scavenge the remaining heat out of the heat exchanger, for efficiency and to protect it from overheating',
+    'To cool the igniter before the next cycle',
+    'To purge unburned gas from the combustion chamber',
+    'To equalise pressure in the ductwork',
+  ],
+  answer: 0,
+  explain:
+    'The heat exchanger is still hot when the burners shut off. Running the blower moves that heat ' +
+    'into the house instead of letting it soak away — free capacity you have already paid for.\n\n' +
+    'It also protects the exchanger. Heat with no airflow across it drives the high-limit switch ' +
+    'open and, over time, stresses the metal.\n\n' +
+    'The on-delay at the start exists for the opposite reason: it stops the blower pushing cold air ' +
+    'at people before the exchanger has warmed up.',
+  source: cite.todo('Confirm the blower delay discussion against your text.'),
+  status: 'draft',
+});
+
+const hsiHandling = defineQuestion({
+  ...T,
+  id: 'hvac.8.3.hsi-handling',
+  objective: '8.3',
+  kind: 'choice',
+  difficulty: 2,
+  prompt:
+    'Why must a hot surface igniter be handled only by its ceramic base?',
+  choices: [
+    'Skin oils on the element cause hot spots that crack it',
+    'The element stays hot for hours after operation',
+    'The element carries line voltage even when disconnected',
+    'Fingerprints interfere with flame rectification',
+  ],
+  answer: 0,
+  explain:
+    'Silicon carbide and silicon nitride elements are brittle and heat unevenly if contaminated. ' +
+    'Oil from your fingers burns onto the surface, creating a spot that runs hotter than the rest, ' +
+    'and thermal stress cracks it — often within a few cycles.\n\n' +
+    'They are also fragile mechanically. Dropping one, or knocking it against the burner assembly ' +
+    'during installation, is enough to finish it.\n\n' +
+    'Handle by the base, install carefully, and check the resistance value against spec before ' +
+    'assuming a no-ignition fault is elsewhere.',
+  source: cite.todo('Confirm HSI handling guidance against your text and manufacturer instructions.'),
+  status: 'draft',
+});
+
+const thermocoupleMillivolts = defineQuestion({
+  ...T,
+  id: 'hvac.8.3.thermocouple-principle',
+  objective: '8.3',
+  kind: 'choice',
+  difficulty: 3,
+  prompt:
+    'How does a thermocouple on a standing-pilot system hold the gas valve open?',
+  choices: [
+    'The flame generates a small DC voltage that energises an electromagnet in the valve',
+    'The flame heats a bimetal strip that pushes the valve open',
+    'The flame creates pressure that lifts the valve seat',
+    'It signals a control board to open the valve',
+  ],
+  answer: 0,
+  explain:
+    'Two dissimilar metals joined and heated generate a small voltage — the Seebeck effect. In a ' +
+    'pilot flame a thermocouple produces roughly 25 to 30 millivolts.\n\n' +
+    'That tiny voltage energises an electromagnet holding the safety valve open. No flame, no ' +
+    'millivolts, the magnet releases and the valve closes.\n\n' +
+    'It is elegantly self-proving and needs no external power at all, which is why standing-pilot ' +
+    'systems keep working in a power cut. The cost is a pilot burning fuel year-round, which is ' +
+    'why the design has been superseded.',
+  source: cite.todo('Confirm the thermocouple discussion and millivolt values against your text.'),
+  status: 'draft',
+});
+
+// --- more 8.4 / 8.5 / 8.6 / 8.7 ---------------------------------------------
+
+const crackedHeatExchanger = defineQuestion({
+  ...T,
+  id: 'hvac.8.4.cracked-exchanger',
+  objective: '8.4',
+  kind: 'choice',
+  difficulty: 3,
+  prompt:
+    'Why is a cracked heat exchanger a condemn-the-furnace condition rather than a repair?',
+  choices: [
+    'It allows combustion products, including carbon monoxide, to mix with the supply air',
+    'It reduces efficiency below the legal minimum',
+    'It causes the blower motor to overheat',
+    'It voids the manufacturer warranty',
+  ],
+  answer: 0,
+  explain:
+    'The heat exchanger is the barrier between combustion gases and the air people breathe. A crack ' +
+    'breaches that barrier, and the blower can pull flue products — including carbon monoxide — ' +
+    'directly into the supply air.\n\n' +
+    'A common tell is a flame that changes shape or rolls out when the blower starts, because the ' +
+    'blower is now pulling on the combustion chamber through the crack.\n\n' +
+    'This is a shut-it-down-and-red-tag condition. The furnace comes out of service until the ' +
+    'exchanger is replaced or the unit is.',
+  source: cite.todo('Confirm heat exchanger inspection guidance against your text and code.'),
+  status: 'draft',
+});
+
+const pvcVenting = defineQuestion({
+  ...T,
+  id: 'hvac.8.5.why-pvc',
+  objective: '8.5',
+  kind: 'choice',
+  difficulty: 2,
+  prompt:
+    'Why is a condensing furnace vented in PVC rather than metal flue pipe?',
+  choices: [
+    'Flue gas is cool and acidic, and it will not rise up a conventional chimney anyway',
+    'PVC is cheaper and code allows it',
+    'PVC handles higher temperatures than metal',
+    'Metal would create too much draft',
+  ],
+  answer: 0,
+  explain:
+    'A condensing furnace extracts so much heat that the flue gas leaves close to room temperature ' +
+    'and carrying liquid condensate. Two consequences follow.\n\n' +
+    'It has no buoyancy, so it will not rise up a masonry chimney — the inducer has to push it, ' +
+    'which makes it a positive-pressure (Category IV) vent that must be sealed.\n\n' +
+    'And the condensate is mildly acidic, which attacks metal flue pipe. PVC handles both the low ' +
+    'temperature and the acidity.\n\n' +
+    'Venting a high-efficiency furnace into an existing chimney is a serious and unfortunately ' +
+    'common installation error.',
+  source: cite.todo('Confirm venting requirements against your text and the applicable fuel gas code.'),
+  status: 'draft',
+});
+
+const expansionTank = defineQuestion({
+  ...T,
+  id: 'hvac.8.6.waterlogged-tank',
+  objective: '8.6',
+  kind: 'choice',
+  difficulty: 3,
+  prompt:
+    'A boiler relief valve discharges every time the system heats up.\n\nWhat should you check first?',
+  choices: [
+    'The expansion tank — a waterlogged tank cannot absorb the volume change as water heats',
+    'The circulator pump, which is over-pumping',
+    'The aquastat setting, which is too high',
+    'The relief valve, which has failed open',
+  ],
+  answer: 0,
+  explain:
+    'Water expands as it heats, and it is nearly incompressible. The expansion tank exists to give ' +
+    'that extra volume somewhere to go, using an air cushion behind a bladder.\n\n' +
+    'If the bladder has failed or the air charge has been lost, the tank fills with water and has ' +
+    'no cushion left. The pressure then rises sharply on every heating cycle, and the relief valve ' +
+    'does exactly what it should.\n\n' +
+    'Replacing the relief valve is treating the symptom — the new one will discharge too. Check the ' +
+    'tank\'s air charge against system fill pressure.',
+  source: cite.todo('Confirm the expansion tank discussion against your text.'),
+  status: 'draft',
+});
+
+const electricHeatEfficiency = defineQuestion({
+  ...T,
+  id: 'hvac.8.7.electric-vs-heatpump',
+  objective: '8.7',
+  kind: 'choice',
+  difficulty: 3,
+  prompt:
+    'Electric resistance heat is 100% efficient at the appliance. Why is a heat pump still much ' +
+    'cheaper to run?',
+  choices: [
+    'A heat pump moves existing heat rather than creating it, delivering two to four times more heat per unit of electricity',
+    'Heat pumps use less electricity per hour',
+    'Resistance heat wastes energy up the flue',
+    'Heat pumps are rated on a different efficiency scale that is not comparable',
+  ],
+  answer: 0,
+  explain:
+    '100% efficient sounds impressive but simply means all the electricity becomes heat. One unit ' +
+    'in, one unit out.\n\n' +
+    'A heat pump does not create heat — it **moves** heat that already exists in the outdoor air. ' +
+    'One unit of electricity can move two to four units of heat, so it exceeds 100% in the sense ' +
+    'that matters to a power bill.\n\n' +
+    'That is why strips are a supplement rather than a primary heat source wherever a heat pump is ' +
+    'available, and why a customer left in emergency heat all winter gets a shocking bill.',
+  source: cite.todo('Confirm the efficiency comparison against your text.'),
+  status: 'draft',
+});
+
 export const SECTOR_8_QUESTIONS: readonly Question[] = [
   combustionRequirements,
+  incompleteC0,
   naturalGasProperties,
+  clockingMeter,
   furnaceSequence,
+  findFlameProof,
+  findPurgeProof,
   shortCycleLockout,
+  blowerOffDelay,
   ignitionTypes,
+  hsiHandling,
+  thermocoupleMillivolts,
   condensingFurnace,
+  crackedHeatExchanger,
   ventCategories,
+  pvcVenting,
   backdrafting,
   hydronicComponents,
+  expansionTank,
   electricHeatSequencer,
+  electricHeatEfficiency,
 ];

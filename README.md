@@ -1,34 +1,62 @@
 # HVAC Trainer
 
-An interactive browser game for learning HVAC — the physics, the refrigeration cycle,
-refrigerants, charging, electrical, airflow, psychrometrics, heating, heat pumps and
-diagnostics. Ten sectors with checkpoints, plus simulators driven by a real physical model
-rather than a lookup table of canned answers.
+An interactive course and simulator for learning HVAC — the physics, the refrigeration
+cycle, refrigerants, charging, electrical, airflow, psychrometrics, heating, heat pumps and
+diagnostics.
 
-A CompTIA Network+ track ships alongside it, unchanged, on the same engine.
+Ten sectors, each with **lessons that teach before they test**, a question bank, and a
+checkpoint that gates the next sector. Plus simulators driven by a real physical model
+rather than a lookup table of canned answers.
 
 ```bash
 npm install
 npm run dev        # http://localhost:5173
-npm test           # 156 tests: physics, fault signatures, content validation
+npm test           # 182 tests: physics, fault signatures, content validation
 ```
+
+**Content: 184 questions across six question types, 15 lessons, 6 generated drill families,
+and a service call simulator with 9 modelled faults.**
 
 ---
 
 ## The idea
 
-Most study apps are a pile of multiple-choice questions. The parts of HVAC that are hard
-to learn from a book are not facts — they are **judgements**: whether 28°F of superheat
-means a leak or a restriction, whether a 16°F temperature drop is a problem or just humid
-weather, which three readings settle a call and which five are a waste of an hour.
+Most study apps are a pile of multiple-choice questions. That tests what you already know
+and is a slow, demoralising way to meet an idea for the first time.
 
-So the core of this is a **system model**. A split system is simulated from its operating
+So every sector **opens with a lesson**: the concept explained, the numbers worth
+memorising pulled into a findable block, a worked example revealed one step at a time so
+you have to predict what comes next, and the traps called out explicitly. Then the
+questions.
+
+And the parts of HVAC that are genuinely hard are not facts — they are **judgements**:
+whether 28°F of superheat means a leak or a restriction, whether a 16°F temperature drop is
+a problem or just humid weather, which three readings settle a call and which five waste an
+hour.
+
+That is what the **system model** is for. A split system is simulated from its operating
 conditions, a fault is injected, and every reading you can take is derived from the same
 underlying state. Superheat computed from the gauges the sim hands you always agrees with
 the superheat the fault should produce, because they come from the same place.
 
-That has a useful consequence for correctness: the simulator's questions cannot be wrong
-the way a transcribed fact can. There is no step where a number gets copied by hand.
+It also means the simulator's questions cannot be wrong the way a transcribed fact can.
+There is no step where a number gets copied by hand.
+
+---
+
+## How a sector works
+
+1. **Learn** — one or two lessons, 6–9 minutes each. Prose, key-number blocks, diagrams,
+   comparison tables, worked examples with progressive reveal, and callouts for traps,
+   warnings and field tips.
+2. **Practise** — the sector's questions, spaced-repetition ordered, explanation after each
+   answer.
+3. **Checkpoint** — a graded test with explanations held to the end. Pass it and the next
+   sector opens.
+
+Six question types: single choice, select-all, typed input with numeric tolerance,
+put-in-order, match-the-pairs, and **hotspot** — click the right component on a diagram,
+which is a different skill from naming it.
 
 ---
 
@@ -131,8 +159,7 @@ Tests pin the anchors every technician knows — R-22 at 40°F is 68.5 psig, R-4
 
 ## Content integrity
 
-Same discipline as the Network+ track. Every authored fact carries a citation, enforced
-three ways:
+Every authored fact carries a citation, enforced three ways:
 
 1. **Compile time** — `defineQuestion` will not typecheck an item marked `status: 'verified'`
    whose source is `cite.todo(...)`.
@@ -141,10 +168,15 @@ three ways:
 3. **In the app** — uncited items are badged `unverified` while you play, listed on the
    Content Audit screen, and excluded from checkpoints.
 
-Current state: **92 HVAC questions, 24 verified, 68 awaiting a citation.** The verified ones
-are cited to things you can check in a minute — 40 CFR Part 82 for the EPA rules, ASHRAE
-Fundamentals for psychrometrics, OSHA 1910.147 for lockout/tagout, or a stated derivation.
-The 68 drafts are study-guide framings, and I did not invent page numbers for them.
+Lessons go through the same validator: table rows must match their headers, diagram links
+must point at nodes that exist, worked examples need an answer, and a lesson cannot be
+marked verified without a citation.
+
+Current state: **184 HVAC questions, 55 verified, 129 awaiting a citation**, plus 15
+lessons. The verified ones are cited to things you can check in a minute — 40 CFR Part 82
+for the EPA rules, ASHRAE Fundamentals for psychrometrics, OSHA 1910.147 for
+lockout/tagout, NFPA 70E for electrical practice, or a stated derivation. The drafts are
+study-guide framings, and no page numbers were invented for them.
 
 Adding content is the main way to extend this. See **[CONTENT_GUIDE.md](CONTENT_GUIDE.md)**.
 
@@ -152,7 +184,7 @@ Adding content is the main way to extend this. See **[CONTENT_GUIDE.md](CONTENT_
 
 ## Books
 
-You asked about books for Network+ previously; for HVAC the equivalents are:
+Worth owning alongside this:
 
 - **Refrigeration and Air Conditioning Technology**, Silberstein / Whitman / Johnson / Tomczyk
   (Cengage) — the standard trade-school text, and the one most programs teach from.
@@ -181,6 +213,7 @@ src/
     grade.ts         Answer checking, partial credit, numeric tolerance
     srs.ts           Spaced repetition
     session.ts       The question game loop
+    lesson.ts        Lesson model and validation
     progression.ts   Sector gating and checkpoints
     profile.ts       Progress, mastery, persistence
   games/hvac/
@@ -192,11 +225,12 @@ src/
     drills.ts        Six generated drill families
   games/             ipv4.ts, subnet.ts, portrush.ts — the Network+ generators
   content/
-    tracks.ts        Sectors, domains, objectives for both tracks
-    hvac/            One file per sector
-    network-plus/    One file per domain
+    tracks.ts        Sectors, domains, objectives
+    hvac/            One question file per sector
+    hvac/lessons/    One lesson file per sector
+    network-plus/    Archived — kept, not maintained
   ui/                Browser front-end, no framework
-tests/               156 tests
+tests/               182 tests
 ```
 
 ## Scripts
@@ -209,3 +243,15 @@ tests/               156 tests
 | `npm run check` | Typecheck and test together |
 
 `dist/` is a static site. Progress lives in `localStorage`; there is no backend.
+
+---
+
+## Network+ (archived)
+
+The CompTIA Network+ N10-009 track this repo started as is still here — 57 questions, the
+subnetting and port generators, all its tests. It is marked `archived: true`, which tucks it
+behind a "show archived" toggle on the track switcher so it does not compete with what you
+are actually studying.
+
+Shelved rather than deleted. Nothing is maintained there, and none of it is on the HVAC
+path, but the content and any progress you made are intact.

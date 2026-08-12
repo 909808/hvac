@@ -13,7 +13,8 @@ import { Session } from '@engine/session';
 import type { FaultId, MeasurementId } from '@games/hvac/system';
 import { ServiceCallRun, generateServiceCall } from '@games/hvac/servicecall';
 import type { Response, Track } from '@engine/types';
-import { ALL_QUESTIONS, TRACKS, trackById } from '@content/index';
+import { lessonsFor } from '@engine/lesson';
+import { ALL_LESSONS, ALL_QUESTIONS, TRACKS, trackById } from '@content/index';
 import { clear, h } from './dom';
 import { buildMixedDrill, buildSession, type ModeId } from './modes';
 import { renderHome } from './screens/home';
@@ -22,6 +23,7 @@ import { renderResults } from './screens/results';
 import { renderAudit, renderProgress } from './screens/reports';
 import { renderSectorMap } from './screens/sectormap';
 import { renderServiceCall } from './screens/servicecall';
+import { renderLesson, resetLessonState } from './screens/lesson';
 
 type Screen =
   | { name: 'home' }
@@ -29,7 +31,8 @@ type Screen =
   | { name: 'results'; previousBest: number }
   | { name: 'progress' }
   | { name: 'audit' }
-  | { name: 'service-call' };
+  | { name: 'service-call' }
+  | { name: 'lesson'; sectorId: string; index: number };
 
 const TRACK_KEY = 'netplus-trainer:track';
 
@@ -83,7 +86,9 @@ export class App {
                 track: this.track,
                 tracks: TRACKS,
                 pool: ALL_QUESTIONS,
+                lessons: ALL_LESSONS,
                 profile: this.profile,
+                onStartLesson: this.startLesson,
                 onStartDrill: (sectorId) => this.start('drill', sectorId),
                 onStartCheckpoint: (sectorId) => this.start('checkpoint', sectorId),
                 onStartLab: (mode) =>
@@ -106,6 +111,26 @@ export class App {
               }),
         );
         break;
+
+      case 'lesson': {
+        const screen = this.screen;
+        const lessons = lessonsFor(ALL_LESSONS, this.track.id, screen.sectorId);
+        if (lessons.length === 0) return this.goto({ name: 'home' });
+
+        const sector = this.track.sectors?.find((s) => s.id === screen.sectorId);
+        this.root.appendChild(
+          renderLesson({
+            lessons,
+            index: Math.min(screen.index, lessons.length - 1),
+            sectorTitle: sector?.title ?? screen.sectorId,
+            onNavigate: (index) =>
+              this.goto({ name: 'lesson', sectorId: screen.sectorId, index }),
+            onStartQuestions: () => this.start('drill', screen.sectorId),
+            onHome: () => this.goto({ name: 'home' }),
+          }),
+        );
+        break;
+      }
 
       case 'service-call': {
         if (!this.call) return this.goto({ name: 'home' });
@@ -179,6 +204,13 @@ export class App {
   // -------------------------------------------------------------------------
   // Session lifecycle
   // -------------------------------------------------------------------------
+
+  private startLesson = (sectorId: string): void => {
+    resetLessonState();
+    this.stopTimer();
+    this.goto({ name: 'lesson', sectorId, index: 0 });
+    window.scrollTo({ top: 0 });
+  };
 
   /** A service call runs its own screen and state machine, not a question session. */
   private startServiceCall = (): void => {

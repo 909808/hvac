@@ -86,6 +86,12 @@ export function grade(question: Question, response: Response): Judgement {
       }
       return { correct: hits === n, credit: n === 0 ? 0 : hits / n, wrongParts };
     }
+
+    case 'hotspot': {
+      const r = response as Extract<Response, { kind: 'hotspot' }>;
+      const correct = r.nodeId === question.answer;
+      return { correct, credit: correct ? 1 : 0, wrongParts: [] };
+    }
   }
 }
 
@@ -117,5 +123,9 @@ export function describeAnswer(question: Question): string {
       return question.steps.map((s, i) => `${i + 1}. ${s}`).join('\n');
     case 'match':
       return question.pairs.map(([l, r]) => `${l} → ${r}`).join('\n');
+    case 'hotspot': {
+      const node = question.topology.nodes.find((n) => n.id === question.answer);
+      return node ? node.label : question.answer;
+    }
   }
 }

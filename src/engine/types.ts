@@ -46,6 +46,12 @@ export interface Track {
    * its domains are genuinely independent and you can study them in any order.
    */
   readonly sectors?: readonly Sector[];
+  /**
+   * Shelved rather than deleted. An archived track still works and keeps its
+   * content and progress, but it is tucked behind a toggle so it does not
+   * compete with what you are actually studying.
+   */
+  readonly archived?: boolean;
 }
 
 /** Simulators and generated drills a sector can offer. */
@@ -191,12 +197,30 @@ export interface MatchQuestion extends QuestionBase {
   readonly pairs: readonly (readonly [left: string, right: string])[];
 }
 
+/**
+ * Click the right component on a diagram.
+ *
+ * The most direct way to ask "where is this in the system?" — which is a
+ * different skill from naming it, and the one that matters when you are stood
+ * in front of the equipment.
+ */
+export interface HotspotQuestion extends QuestionBase {
+  readonly kind: 'hotspot';
+  /** Required here, unlike the optional diagram on other kinds. */
+  readonly topology: Topology;
+  /** Id of the node that is correct. Validated to exist. */
+  readonly answer: string;
+  /** Optional per-node notes explaining why a wrong pick is wrong. */
+  readonly whyWrong?: Readonly<Record<string, string>>;
+}
+
 export type Question =
   | ChoiceQuestion
   | MultiQuestion
   | InputQuestion
   | OrderQuestion
-  | MatchQuestion;
+  | MatchQuestion
+  | HotspotQuestion;
 
 export type QuestionKind = Question['kind'];
 
@@ -265,7 +289,8 @@ export type Response =
   | { readonly kind: 'multi'; readonly indices: readonly number[] }
   | { readonly kind: 'input'; readonly text: string }
   | { readonly kind: 'order'; readonly order: readonly number[] }
-  | { readonly kind: 'match'; readonly mapping: Readonly<Record<number, number>> };
+  | { readonly kind: 'match'; readonly mapping: Readonly<Record<number, number>> }
+  | { readonly kind: 'hotspot'; readonly nodeId: string };
 
 export interface Judgement {
   readonly correct: boolean;

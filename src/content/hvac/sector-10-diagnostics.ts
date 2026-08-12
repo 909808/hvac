@@ -282,14 +282,260 @@ const callbackPrevention = defineQuestion({
   status: 'draft',
 });
 
+// --- more 10.2 --------------------------------------------------------------
+
+const highSuperheatAmbiguous = defineQuestion({
+  ...T,
+  id: 'hvac.10.2.superheat-alone-ambiguous',
+  objective: '10.2',
+  kind: 'choice',
+  difficulty: 3,
+  prompt:
+    'Superheat measures 28°F on a system that should be running 10°F.\n\n' +
+    'What can you conclude from that reading alone?',
+  choices: [
+    'Only that the evaporator is starving — subcooling is needed to say why',
+    'The system is undercharged',
+    'There is a restriction in the liquid line',
+    'The metering device has failed',
+  ],
+  answer: 0,
+  explain:
+    'High superheat says the coil ran out of liquid early. It does **not** say why.\n\n' +
+    'An undercharge starves the coil because there is not enough refrigerant in the system. A ' +
+    'restriction starves it because refrigerant cannot get through. Both give high superheat.\n\n' +
+    'Subcooling separates them:\n' +
+    '**LOW subcooling** → not enough refrigerant anywhere → undercharge.\n' +
+    '**HIGH subcooling** → refrigerant backing up behind a blockage → restriction.\n\n' +
+    'Acting on superheat alone is how a technician adds refrigerant to a restricted system, making ' +
+    'it worse and leaving it overcharged once the restriction is finally found.',
+  source: cite.todo('Confirm the superheat/subcooling pairing against your service text.'),
+  status: 'draft',
+});
+
+const highHeadCleanCoil = defineQuestion({
+  ...T,
+  id: 'hvac.10.2.high-split-clean-coil',
+  objective: '10.2',
+  kind: 'choice',
+  difficulty: 3,
+  prompt:
+    'Condenser split is 38°F on a standard-efficiency unit. The coil is clean, the fan runs well, ' +
+    'and there is nothing blocking airflow. The system was repaired six weeks ago.\n\n' +
+    'What fits?',
+  choices: [
+    'Non-condensables — air left in the system because it was not properly evacuated',
+    'A dirty condenser coil that you have missed',
+    'An undercharge',
+    'Low indoor airflow',
+  ],
+  answer: 0,
+  explain:
+    'The **contradiction** is the diagnosis. A high split says heat is not leaving the condenser, ' +
+    'but a clean coil with a working fan says there is no physical reason for that.\n\n' +
+    'Air trapped in the system occupies condenser volume and adds its own partial pressure on top ' +
+    'of the refrigerant\'s. Head pressure reads higher than the refrigerant temperature alone ' +
+    'accounts for.\n\n' +
+    'That it followed a repair points straight at evacuation. Air does not come out on its own — ' +
+    'only a deep vacuum removes it, which is why 500 microns and a decay test exist.\n\n' +
+    'There is no way to bleed it out selectively. Recover, evacuate properly, weigh in a fresh charge.',
+  source: cite.todo('Confirm the non-condensable diagnosis against your service text.'),
+  status: 'draft',
+});
+
+// --- more 10.3 --------------------------------------------------------------
+
+const deltaTHighMeaning = defineQuestion({
+  ...T,
+  id: 'hvac.10.3.high-delta-t-meaning',
+  objective: '10.3',
+  kind: 'choice',
+  difficulty: 2,
+  prompt:
+    'Return air is 76°F, supply air is 48°F — a 28°F drop, well above the expected range.\n\n' +
+    'What does that point to?',
+  choices: [
+    'Low airflow — less air passing over the coil spends longer against it and drops further',
+    'An overcharge',
+    'A dirty condenser coil',
+    'The system is working better than expected',
+  ],
+  answer: 0,
+  whyWrong: {
+    1: 'An overcharge reduces capacity and gives a LOWER drop.',
+    2: 'A dirty condenser affects the high side and gives a lower drop, not a higher one.',
+    3: 'A large drop with low total airflow means less total heat moved, not more.',
+  },
+  explain:
+    'It is tempting to read a big temperature drop as good performance. It is not — it means very ' +
+    'little air is getting through.\n\n' +
+    'Capacity is CFM × ΔT. Halve the airflow and the drop rises, but the product falls: less total ' +
+    'heat is being moved and the house does not cool.\n\n' +
+    'A 28°F drop is also close to freezing the coil, which is where this ends if it is left. Check ' +
+    'the filter, the blower wheel, the coil face and duct static pressure.',
+  source: cite.todo('Confirm the delta-T interpretation against your service text.'),
+  status: 'draft',
+});
+
+const bothLowSuction = defineQuestion({
+  ...T,
+  id: 'hvac.10.3.order-of-checks',
+  objective: '10.3',
+  kind: 'order',
+  difficulty: 2,
+  prompt:
+    'Suction pressure is low. Put these checks in the order that gets you an answer fastest.',
+  steps: [
+    'Look at the filter and the coil face — free, and airflow is the most common cause',
+    'Measure return and supply air temperature to get the delta-T',
+    'Judge the delta-T against the entering wet bulb to separate airflow from charge',
+    'If it points at the refrigerant side, measure liquid line temperature for subcooling',
+    'Use superheat and subcooling together to separate an undercharge from a restriction',
+  ],
+  explain:
+    'Order the checks by information gained per minute spent. Visual first, air side second, ' +
+    'refrigerant side last.\n\n' +
+    'A loaded filter settles it in ten seconds. A delta-T reading takes two minutes and eliminates ' +
+    'half the possibilities. Only then is it worth doing the refrigerant-side arithmetic.\n\n' +
+    'Reaching for the gauges first is the habit worth breaking — it is slower, it costs a little ' +
+    'refrigerant every time, and it answers a question you may not need to ask.',
+  source: cite.todo('Confirm the diagnostic sequence against your service text.'),
+  status: 'draft',
+});
+
+// --- more 10.4 --------------------------------------------------------------
+
+const compressorNotRunning = defineQuestion({
+  ...T,
+  id: 'hvac.10.4.nothing-happens',
+  objective: '10.4',
+  kind: 'choice',
+  difficulty: 2,
+  prompt:
+    'The thermostat calls for cooling. The indoor blower runs but the outdoor unit is completely ' +
+    'silent — no hum, no fan.\n\nWhere do you start?',
+  choices: [
+    'Check for 24 V at the contactor coil, which tells you whether the fault is in the control circuit or the load side',
+    'Connect gauges to check the refrigerant charge',
+    'Replace the run capacitor',
+    'Check the compressor windings',
+  ],
+  answer: 0,
+  explain:
+    'Complete silence means the contactor is not pulling in, or it is pulling in and there is no ' +
+    'power beyond it. One measurement splits the problem in half.\n\n' +
+    '**24 V present at the coil but the contactor is not closing** → the contactor itself, or its ' +
+    'coil, has failed.\n\n' +
+    '**No 24 V at the coil** → work back up the control circuit: thermostat, safety switches, ' +
+    'transformer, control fuse.\n\n' +
+    'A humming compressor would be a different fault entirely — that is a locked rotor, and the ' +
+    'capacitor becomes the first suspect. Silence and humming point in opposite directions.',
+  source: cite.todo('Confirm the no-operation diagnostic sequence against your service text.'),
+  status: 'draft',
+});
+
+const breakerTrips = defineQuestion({
+  ...T,
+  id: 'hvac.10.4.breaker-trips-immediately',
+  objective: '10.4',
+  kind: 'choice',
+  difficulty: 3,
+  prompt:
+    'A breaker trips the instant the outdoor unit is energised, before the compressor even attempts ' +
+    'to start.\n\nWhat does the timing tell you?',
+  choices: [
+    'A direct short or a grounded winding — an overload from a hard start would take seconds, not instants',
+    'A weak run capacitor',
+    'An overcharge raising the amp draw',
+    'A dirty condenser coil',
+  ],
+  answer: 0,
+  explain:
+    'Timing is the diagnostic here.\n\n' +
+    '**Instant trip** → a short circuit or a ground fault. Current is not limited by anything, so ' +
+    'the magnetic trip acts immediately. Check terminal-to-shell continuity on the compressor and ' +
+    'look for damaged wiring.\n\n' +
+    '**Trips after several seconds** → an overload condition. The thermal element takes time to ' +
+    'respond. That is a locked rotor, a weak capacitor, or genuinely excessive running current.\n\n' +
+    'The other options all raise current gradually and would trip on the thermal element, not ' +
+    'instantly.',
+  source: cite.todo('Confirm the breaker trip discussion against your service text.'),
+  status: 'draft',
+});
+
+// --- more 10.1 / 10.5 -------------------------------------------------------
+
+const customerInterview = defineQuestion({
+  ...T,
+  id: 'hvac.10.1.ask-the-customer',
+  objective: '10.1',
+  kind: 'multi',
+  difficulty: 2,
+  prompt:
+    'Which questions to the customer genuinely narrow the diagnosis before you touch anything? ' +
+    'Select all that apply.',
+  choices: [
+    'When did it start, and did anything change around then?',
+    'Is it constant, or worse at certain times of day?',
+    'Has anyone else worked on it recently?',
+    'What temperature do you keep it at in winter?',
+  ],
+  answers: [0, 1, 2],
+  explain:
+    'The first three are free information that eliminates whole families of cause.\n\n' +
+    '"It started after the storm" suggests electrical damage. "Only in the afternoon" suggests ' +
+    'something load- or heat-related — a marginal capacitor, a condenser that cannot cope on a hot ' +
+    'day. "Someone was out last month" raises non-condensables, a wrong charge, or a part fitted ' +
+    'incorrectly.\n\n' +
+    'The winter setpoint tells you nothing about a summer cooling fault. The skill is asking ' +
+    'questions whose answers change what you do next.',
+  source: cite.todo('Confirm the customer interview discussion against your service text.'),
+  status: 'draft',
+});
+
+const baselineValue = defineQuestion({
+  ...T,
+  id: 'hvac.10.5.trend-detection',
+  objective: '10.5',
+  kind: 'choice',
+  difficulty: 2,
+  prompt:
+    'Last year\'s maintenance record shows subcooling at 10°F. This year it reads 6°F, still within ' +
+    'the acceptance band.\n\nWhat should you do?',
+  choices: [
+    'Investigate — a downward trend in subcooling suggests a developing leak, even though the reading still passes',
+    'Nothing, since 6°F is within tolerance',
+    'Add refrigerant to bring it back to 10°F',
+    'Note it and check again next year',
+  ],
+  answer: 0,
+  explain:
+    'A single reading tells you whether a system is inside its bands. Two readings a year apart tell ' +
+    'you which **direction** it is heading, and that is far more useful.\n\n' +
+    'Subcooling drifting from 10°F to 6°F is refrigerant leaving the system. It still passes today, ' +
+    'and it will not pass in August when the customer needs it most.\n\n' +
+    'Adding refrigerant without finding the leak treats the number instead of the cause — and puts ' +
+    'you back next season. This is exactly what documentation is for.',
+  source: cite.todo('Confirm the trend analysis discussion against your service text.'),
+  status: 'draft',
+});
+
 export const SECTOR_10_QUESTIONS: readonly Question[] = [
   troubleshootingOrder,
   lookFirst,
+  customerInterview,
   bothPressures,
+  highSuperheatAmbiguous,
+  highHeadCleanCoil,
   airflowVsCharge,
   deltaTMisread,
+  deltaTHighMeaning,
+  bothLowSuction,
   compressorNotStarting,
+  compressorNotRunning,
+  breakerTrips,
   contactorChatter,
   documentReadings,
+  baselineValue,
   callbackPrevention,
 ];

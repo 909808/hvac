@@ -191,5 +191,7 @@ function emptyResponse(question: Question): Response {
       return { kind: 'order', order: [] };
     case 'match':
       return { kind: 'match', mapping: {} };
+    case 'hotspot':
+      return { kind: 'hotspot', nodeId: '' };
   }
 }

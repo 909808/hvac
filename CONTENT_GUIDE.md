@@ -4,9 +4,11 @@ Everything in this guide assumes you have a book open next to you. That is the p
 the app is built so that transcribing from a real source is the easy path and inventing
 things is the awkward one.
 
-Two tracks share the same content model: **HVAC** (ten sectors, gated by checkpoints) and
-**CompTIA Network+ N10-009** (five domains, independent). Everything below applies to both;
-the track-specific parts are called out where they differ.
+**HVAC** is the active track: ten sectors, each with lessons and a gated checkpoint. The
+CompTIA Network+ track is archived — still present, not maintained.
+
+There are two kinds of content: **lessons** that teach, and **questions** that test. Both
+go through the same citation discipline and the same validator.
 
 ---
 
@@ -24,66 +26,66 @@ cite.generated('subnet:vlsm')         // computed, nothing to cite — for gener
 cite.todo('Check against ch. 7')      // no citation — forces status: 'draft'
 ```
 
-Prefer `cite.standard` when the fact has a primary source. "DHCPDISCOVER is a broadcast"
-is in RFC 2131; you do not need a textbook to tell you that, and the RFC will still be
-correct in ten years. Use `cite.book` for anything that is a study-guide framing rather
-than a specification — the three-tier hierarchical model, the hot/cold aisle layout, how
-CompTIA groups attack types.
+Prefer `cite.standard` when the fact has a primary source. The 80% cylinder fill limit is
+in 40 CFR Part 82; you do not need a textbook to tell you that, and the regulation will
+still say it in ten years. Use `cite.book` for anything that is a study-guide framing
+rather than a specification — condenser split ranges, "check the filter first", the
+troubleshooting habit.
 
 ---
 
 ## Your first question
 
-Content lives in `src/content/network-plus/domain-N-*.ts`. Open the file for the domain,
-copy an existing entry, and change it.
+Questions live in `src/content/hvac/sector-N-*.ts`. Open the file for the sector, copy an
+existing entry, and change it.
 
 ```ts
 import { cite, defineQuestion } from '@engine/define';
 
-const stpRoot = defineQuestion({
+const subcoolTarget = defineQuestion({
   // Convention: <track>.<objective>.<slug>. Must be unique across the whole app.
-  id: 'n10-009.2.2.stp-root-election',
-  track: 'n10-009',
-  domain: '2.0',
-  objective: '2.2',
+  id: 'hvac.4.3.subcooling-target',
+  track: 'hvac',
+  domain: '4.0',              // sector
+  objective: '4.3',
 
   kind: 'choice',
   difficulty: 2,              // 1 recall · 2 applied · 3 analysis
 
-  prompt: 'Four switches run STP with default priorities. Which becomes root bridge?',
+  prompt: 'You are charging a TXV system. Which reading do you charge by?',
   choices: [
-    'The one with the lowest MAC address',
-    'The one with the highest MAC address',
-    'The one with the most ports',
-    'The one powered on first',
+    'Subcooling',
+    'Superheat',
+    'Suction pressure',
+    'Head pressure',
   ],
   answer: 0,
 
   // Optional: why each distractor is wrong. Shown under that choice on reveal.
   // This is the single highest-value field in the whole schema — see below.
   whyWrong: {
-    1: 'Lowest wins, not highest — the comparison is a straight numeric one.',
-    3: 'Boot order affects which switch claims root first, but the election re-converges.',
+    1: 'A TXV holds superheat constant regardless of charge, so it tells you nothing.',
+    2: 'Suction pressure varies with indoor load and airflow, not just charge.',
   },
 
   explain:
-    'Bridge ID is priority followed by MAC address. With priorities equal at the ' +
-    'default 32768, the MAC address breaks the tie and the lowest wins. This is why ' +
-    'the oldest switch in the room so often ends up as root by accident — set the ' +
-    'priority explicitly on the switch you actually want.',
+    'A TXV modulates to hold superheat at its setting — add refrigerant and it throttles ' +
+    'back, remove some and it opens. Superheat barely moves, so it cannot indicate charge. ' +
+    'Subcooling can, because excess refrigerant has to stack somewhere and the condenser ' +
+    'is where it goes. Target is typically 8–12°F; check the nameplate.',
 
-  source: cite.standard('IEEE 802.1D'),
-  status: 'verified',
+  source: cite.todo('Confirm against the charging chapter of your text.'),
+  status: 'draft',
 });
 ```
 
 Then add it to the export at the bottom of the file:
 
 ```ts
-export const DOMAIN_2_QUESTIONS: readonly Question[] = [
-  routingProtocolTypes,
+export const SECTOR_4_QUESTIONS: readonly Question[] = [
+  meteringComparison,
   // …
-  stpRoot,          // ← here
+  subcoolTarget,          // ← here
 ];
 ```
 
@@ -103,20 +105,20 @@ of a mechanism, and it will not survive contact with an exam that asks scenario 
 **Make the distractors plausible.** The wrong answers are where the learning is. A
 question whose three wrong options are obviously wrong teaches nothing; one where the
 wrong option is the thing you would have reached for teaches a great deal. Draw distractors
-from real confusions — network address vs. broadcast address, forward proxy vs. reverse
-proxy, RPO vs. RTO, APIPA vs. CGNAT.
+from real confusions — undercharge vs. restriction, low airflow vs. low charge, auxiliary
+vs. emergency heat, superheat vs. subcooling subtraction order.
 
-**Fill in `whyWrong` when you can.** This is where a practice-test book earns its price.
-Zacker's explanations of *why each distractor fails* are exactly this field. Transcribing
-those is more valuable than transcribing another hundred prompts.
+**Fill in `whyWrong` when you can.** This is where a practice-test book earns its price —
+the explanations of *why each distractor fails* are exactly this field, and transcribing
+those is worth more than another hundred prompts.
 
-**Say why, not just what.** "The answer is 100 metres" teaches a number. "The 100 m channel
-is 90 m in the walls plus 10 m of patch cords, which is what people forget when they say
-'the run is only 92 m'" teaches you to catch the mistake in the field.
+**Say why, not just what.** "Target airflow is 400 CFM per ton" teaches a number. "Less air
+means a colder coil, which condenses more moisture — right for Houston, wrong for Phoenix"
+teaches you to make the call yourself.
 
 ---
 
-## The five question types
+## The six question types
 
 ### `choice` — one right answer
 
@@ -186,6 +188,23 @@ ambiguous and there is no single correct answer — the validator rejects it. (T
 real mistake during development: an 802.11 question had both `802.11a` and `802.11ac`
 mapping to "5 GHz only".)
 
+### `hotspot` — click the component on a diagram
+
+```ts
+kind: 'hotspot',
+topology: cycleDiagram,        // required for this kind
+prompt: 'Click the component where heat is absorbed from the space.',
+answer: 'evap',                // a node id, validated to exist
+whyWrong: {
+  cond: 'The condenser REJECTS heat. It is the opposite end of the job.',
+  comp: 'The compressor raises pressure; it does not absorb heat from the space.',
+},
+```
+
+Asking "where is this in the system?" is a different skill from naming it, and it is the
+one that matters when you are stood in front of the equipment. Needs at least three nodes
+so it is not a coin flip, and the tests require most wrong picks to be explained.
+
 ---
 
 ## Topology diagrams
@@ -207,7 +226,9 @@ topology: {
 }
 ```
 
-Node kinds: `router` `switch` `firewall` `server` `pc` `ap` `cloud` `controller` `sensor`.
+HVAC node kinds: `compressor` `condenser` `evaporator` `metering` `fan` `blower` `furnace`
+`boiler` `pump` `damper` `thermostat` `accumulator` `sensor` `controller`.
+(Networking kinds are also available for the archived track.)
 States: `ok` `warn` `down`.
 
 **Mark the symptom, not the cause.** Colouring the actual faulty device gives the answer
@@ -258,6 +279,107 @@ The Content Audit screen in the app lists every item awaiting a citation. For ea
 
 Draft items still appear in practice modes, badged `unverified`. They never appear in exam
 simulation.
+
+---
+
+## Writing lessons
+
+A lesson is what a sector opens with. It is structured rather than free prose so the reader
+can render it consistently, and so a key-numbers block is always in the same findable place
+— which is what makes it usable as a reference later, not just a read.
+
+Lessons live in `src/content/hvac/lessons/sector-N.ts`.
+
+```ts
+import { cite } from '@engine/define';
+import { defineLesson, type Lesson } from '@engine/lesson';
+
+const myLesson = defineLesson({
+  id: 'hvac.lesson.6.airflow',
+  track: 'hvac',
+  domain: '6.0',          // must match a sector id
+  order: 1,               // position within the sector
+  title: 'Airflow: the half of the job that gets skipped',
+  summary: 'One line on why this matters. Shown on the sector card.',
+  minutes: 8,             // rough reading time
+  sections: [ /* see below */ ],
+  source: cite.standard('ASHRAE Handbook — Fundamentals, Ch. 1'),
+  status: 'verified',
+}) satisfies Lesson;
+```
+
+Then export it from the file's array and it appears automatically — the "Learn" button, the
+reading-time estimate and the lesson navigation all pick it up.
+
+### The six section types
+
+**`prose`** — ordinary explanation. Blank lines become paragraphs. `**bold**` and `*italic*`
+render.
+
+```ts
+{ kind: 'prose', heading: 'Optional heading', body: 'Text…\n\nMore text…' }
+```
+
+**`keyNumbers`** — the things to memorise, in one findable block. Deliberately separate from
+prose: these are what you will want on a roof at 4pm, and burying them in a paragraph makes
+that impossible.
+
+```ts
+{
+  kind: 'keyNumbers',
+  heading: 'Commit these to memory',
+  items: [
+    { label: 'Design airflow', value: '400 CFM/ton', note: '350–450 acceptable' },
+  ],
+}
+```
+
+**`diagram`** — a topology, same model the questions use.
+
+**`worked`** — a worked example, revealed one step at a time. The reader hides later steps
+until asked, because being made to predict each step teaches far more than seeing the whole
+solution at once.
+
+```ts
+{
+  kind: 'worked',
+  heading: 'Worked example: total external static',
+  problem: 'A manometer reads −0.38 in the return and +0.42 in the supply…',
+  steps: [
+    { action: 'Ask why the return reads negative.', result: 'The blower is pulling on it.' },
+    { action: 'Add the magnitudes, not the signed values.', result: '0.38 + 0.42 = 0.80' },
+  ],
+  answer: '0.80 in. w.c. — well past the 0.50 rating',
+  moral: 'What the example was really teaching, beyond the arithmetic.',
+}
+```
+
+**`table`** — comparison tables. Row length must match the column count; the validator checks.
+
+**`callout`** — three tones:
+
+- `tip` — a field shortcut
+- `warning` — something that can hurt you or destroy equipment
+- `trap` — a specific mistake people actually make
+
+Use `trap` generously. Most of the value in a lesson is in naming the wrong turn before
+somebody takes it.
+
+### What makes a lesson worth reading
+
+**Explain the mechanism, not just the rule.** "TESP adds the magnitudes" is a rule to
+memorise and forget. "The return reads negative because the blower is pulling on it, and
+both numbers represent work it is doing" is a reason you can reconstruct.
+
+**Pull the numbers out.** If a fact is worth memorising, it belongs in a `keyNumbers` block
+where it can be found again, not buried mid-paragraph.
+
+**Name the trap.** Every topic has a specific way people get it wrong. Adding the signed
+static values. Charging a TXV by superheat. Subtracting subcooling the wrong way. Say it
+explicitly.
+
+**Keep it to one sitting.** 6–9 minutes each. A sector with a lot to cover gets two lessons,
+not one long one — there is a test asserting no sector exceeds 40 minutes total.
 
 ---
 

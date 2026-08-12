@@ -4,6 +4,11 @@ import type { Track } from '@engine/types';
 /**
  * N10-009 domains and objectives.
  *
+ * ARCHIVED. HVAC is the focus of this app; Network+ is shelved rather than
+ * removed — the content is intact, it still plays, and it is reachable from the
+ * "show archived" toggle on the track switcher. Nothing here is maintained
+ * actively, and none of it is on the path.
+ *
  * Domain weightings drive exam-mode question allocation, so they matter beyond
  * being labels. Weightings and objective numbering below follow CompTIA's
  * published N10-009 objectives (exam objectives v4.0, exam launched 20 June
@@ -17,8 +22,9 @@ import type { Track } from '@engine/types';
 export const N10_009 = defineTrack({
   id: 'n10-009',
   title: 'CompTIA Network+',
-  subtitle: 'Networking fundamentals, implementation, operations, security and troubleshooting',
+  subtitle: 'Archived — kept for reference, not on the HVAC path',
   revision: 'N10-009',
+  archived: true,
   domains: [
     {
       id: '1.0',

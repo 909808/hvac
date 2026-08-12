@@ -325,15 +325,224 @@ const splitDefinition = defineQuestion({
   status: 'draft',
 });
 
+// --- hotspot questions on the cycle ----------------------------------------
+
+const findEvaporator = defineQuestion({
+  ...T,
+  id: 'hvac.2.1.hotspot-heat-absorbed',
+  objective: '2.1',
+  kind: 'hotspot',
+  difficulty: 1,
+  topology: cycleDiagram,
+  prompt: 'Click the component where heat is absorbed from the space being cooled.',
+  answer: 'evap',
+  whyWrong: {
+    cond: 'The condenser REJECTS heat to the outdoors. It is the opposite end of the job.',
+    comp: 'The compressor raises pressure. It adds heat to the refrigerant, but it does not absorb heat from the space.',
+    meter: 'The metering device drops pressure. No meaningful heat transfer happens there.',
+  },
+  explain:
+    'The evaporator is where refrigerant boils, and boiling absorbs enormous quantities of latent ' +
+    'heat. That heat comes from the air passing over the coil, which is what cools the space.\n\n' +
+    'The name is literal: it is where the refrigerant evaporates.',
+  source: cite.standard('Standard vapour-compression cycle'),
+  status: 'verified',
+});
+
+const findPressureDrop = defineQuestion({
+  ...T,
+  id: 'hvac.2.2.hotspot-pressure-drop',
+  objective: '2.2',
+  kind: 'hotspot',
+  difficulty: 2,
+  topology: cycleDiagram,
+  prompt: 'Click the component where high-side pressure becomes low-side pressure.',
+  answer: 'meter',
+  whyWrong: {
+    comp: 'The compressor does the opposite — it raises pressure from low side to high side.',
+    cond: 'The condenser changes state at roughly constant pressure. It stays on the high side throughout.',
+    evap: 'The evaporator changes state at roughly constant pressure. It is already on the low side.',
+  },
+  explain:
+    'Pressure changes at exactly two points in the loop: it rises through the compressor and falls ' +
+    'through the metering device. Everything between them is either all high side or all low side.\n\n' +
+    'Knowing which side you are standing at tells you which gauge should read what, and that alone ' +
+    'catches a surprising number of mistakes.',
+  source: cite.standard('Standard vapour-compression cycle'),
+  status: 'verified',
+});
+
+const findSuperheatMeasurement = defineQuestion({
+  ...T,
+  id: 'hvac.2.4.hotspot-superheat-location',
+  objective: '2.4',
+  kind: 'hotspot',
+  difficulty: 3,
+  topology: cycleDiagram,
+  prompt:
+    'You are measuring superheat. Click the component whose OUTLET line you clamp the thermometer to.',
+  answer: 'evap',
+  whyWrong: {
+    cond: 'The condenser outlet is the liquid line — that is where you measure for subcooling.',
+    comp: 'The compressor outlet is the hot gas discharge line, which is a different measurement.',
+    meter: 'The metering device outlet carries a liquid-vapour mixture, still at saturation.',
+  },
+  explain:
+    'Superheat is measured on the suction line — the evaporator outlet, running back to the ' +
+    'compressor. Clamp the thermometer about six inches from the service valve and insulate it ' +
+    'from ambient air.\n\n' +
+    'Then read the low-side gauge, convert to saturation temperature, and subtract. Superheat = ' +
+    'suction line temperature − evaporator saturation temperature.\n\n' +
+    'Subcooling is the mirror image: measured at the condenser outlet, on the liquid line.',
+  source: cite.standard('Superheat measurement — standard refrigeration practice'),
+  status: 'verified',
+});
+
+// --- more 2.3 ---------------------------------------------------------------
+
+const saturationMeaning = defineQuestion({
+  ...T,
+  id: 'hvac.2.3.what-saturation-means',
+  objective: '2.3',
+  kind: 'choice',
+  difficulty: 2,
+  prompt: 'What does it mean for a refrigerant to be "saturated"?',
+  choices: [
+    'Liquid and vapour coexist in equilibrium, so pressure and temperature are locked together',
+    'The refrigerant has absorbed all the heat it can',
+    'The system is overcharged',
+    'The refrigerant is contaminated with moisture',
+  ],
+  answer: 0,
+  explain:
+    'Saturation is the condition where liquid and vapour exist together. While that is true, ' +
+    'pressure and temperature move as a pair — know one and a P-T chart gives you the other.\n\n' +
+    'That state exists in the boiling section of the evaporator and the condensing section of the ' +
+    'condenser, and nowhere else. Outside those regions the two become independent, which is ' +
+    'exactly what superheat and subcooling measure.',
+  source: cite.standard('Saturation properties — standard thermodynamics'),
+  status: 'verified',
+});
+
+const ptChartUse = defineQuestion({
+  ...T,
+  id: 'hvac.2.3.reading-a-chart',
+  objective: '2.3',
+  kind: 'choice',
+  difficulty: 2,
+  prompt:
+    'Your low-side gauge reads 118 psig on an R-410A system, and the suction line measures 68°F.\n\n' +
+    'What is the superheat?',
+  choices: ['28°F', '50°F', '68°F', 'Cannot be determined without the subcooling'],
+  answer: 0,
+  whyWrong: {
+    1: 'That would be the saturation temperature subtracted from something else.',
+    2: 'That is just the line temperature.',
+    3: 'Superheat and subcooling are independent measurements.',
+  },
+  explain:
+    '118 psig on the R-410A scale is a saturation temperature of about 40°F.\n\n' +
+    'Superheat = suction line temperature − saturation temperature = 68 − 40 = **28°F**.\n\n' +
+    'That is high. A TXV system should hold 8–12°F, so 28°F says the coil is starving — either an ' +
+    'undercharge or a restriction. Subcooling would tell you which.',
+  source: cite.standard('R-410A saturation at 118 psig ≈ 40°F'),
+  status: 'verified',
+});
+
+// --- more 2.5 / 2.6 ---------------------------------------------------------
+
+const subcoolingDirection = defineQuestion({
+  ...T,
+  id: 'hvac.2.5.negative-subcooling',
+  objective: '2.5',
+  kind: 'choice',
+  difficulty: 2,
+  prompt:
+    'You calculate subcooling and get −8°F.\n\nWhat has most likely happened?',
+  choices: [
+    'You subtracted in the wrong direction',
+    'The system has negative subcooling, which indicates an overcharge',
+    'The liquid line is colder than possible',
+    'The gauge is reading incorrectly',
+  ],
+  answer: 0,
+  explain:
+    'Subcooling counts DOWN from saturation: condensing temperature − liquid line temperature. ' +
+    'Superheat counts UP: suction line temperature − saturation temperature.\n\n' +
+    'The two subtract in opposite directions, and mixing them up is the single most common ' +
+    'arithmetic error in this work. A negative result is the clue that you did.\n\n' +
+    'Genuine zero subcooling is possible — it means no liquid is stacked in the condenser at all, ' +
+    'a severe undercharge — but a *negative* number is not physically meaningful.',
+  source: cite.standard('Subcooling definition — standard refrigeration practice'),
+  status: 'verified',
+});
+
+const splitCalculation = defineQuestion({
+  ...T,
+  id: 'hvac.2.6.split-calculation',
+  objective: '2.6',
+  kind: 'input',
+  difficulty: 2,
+  prompt:
+    'An R-410A system reads 365 psig on the high side, and outdoor ambient is 95°F.\n\n' +
+    'What is the condenser split, in °F? (365 psig ≈ 110°F saturation.)',
+  placeholder: '°F',
+  accept: ['15'],
+  tolerance: 2,
+  explain:
+    'Condenser split = condensing temperature − outdoor ambient = 110 − 95 = **15°F**.\n\n' +
+    'For a standard-efficiency unit that would be unusually tight; for a high-efficiency unit ' +
+    'with its larger coil it is right in the expected 15–20°F band.\n\n' +
+    'The split is more useful than head pressure alone because it already accounts for the ' +
+    'weather. 365 psig sounds high until you notice it is 95°F outside.',
+  source: cite.standard('Arithmetic: 110 − 95'),
+  status: 'verified',
+});
+
+const compressionRatio = defineQuestion({
+  ...T,
+  id: 'hvac.2.6.why-head-pressure-costs',
+  objective: '2.6',
+  kind: 'choice',
+  difficulty: 3,
+  prompt: 'Why does high head pressure reduce capacity as well as raising running cost?',
+  choices: [
+    'The compressor works harder per pound moved, and less refrigerant flows for the same effort',
+    'High pressure makes the refrigerant leak faster',
+    'It causes the metering device to close',
+    'It has no effect on capacity, only on amps',
+  ],
+  answer: 0,
+  explain:
+    'The compressor has to lift refrigerant from suction pressure to discharge pressure. Raise the ' +
+    'discharge side and that lift gets bigger, so each pound of refrigerant costs more energy — ' +
+    'amps go up.\n\n' +
+    'At the same time the compressor moves less refrigerant per revolution, because more of the ' +
+    'cylinder volume is taken up re-expanding gas left over from the previous stroke. Less flow ' +
+    'means less capacity.\n\n' +
+    'So high head pressure costs you twice: more power in, less cooling out. That is why a dirty ' +
+    'condenser is not a minor efficiency issue.',
+  source: cite.todo('Confirm the compression ratio discussion against your text.'),
+  status: 'draft',
+});
+
 export const SECTOR_2_QUESTIONS: readonly Question[] = [
   fourComponents,
+  findEvaporator,
+  findPressureDrop,
   compressorRole,
   stateOrder,
   meteringPressureDrop,
+  saturationMeaning,
   ptWhereItApplies,
+  ptChartUse,
   superheatDefinition,
+  findSuperheatMeasurement,
   zeroSuperheat,
   subcoolingDefinition,
+  subcoolingDirection,
   whySubcoolMatters,
   splitDefinition,
+  splitCalculation,
+  compressionRatio,
 ];

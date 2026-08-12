@@ -289,15 +289,265 @@ const salesRestriction = defineQuestion({
   status: 'verified',
 });
 
+// --- more 3.1 ---------------------------------------------------------------
+
+const chlorineOzone = defineQuestion({
+  ...T,
+  id: 'hvac.3.1.chlorine-ozone',
+  objective: '3.1',
+  kind: 'choice',
+  difficulty: 2,
+  prompt: 'Which element in older refrigerants is responsible for ozone depletion?',
+  choices: ['Chlorine', 'Fluorine', 'Carbon', 'Hydrogen'],
+  answer: 0,
+  explain:
+    'Chlorine is the ozone-destroying element, and the phase-out order follows how much of it each ' +
+    'family contains.\n\n' +
+    'CFCs have the most and went first. HCFCs — the H is hydrogen, which makes them break down ' +
+    'lower in the atmosphere — have less and were phased out of new equipment by 2010. HFCs have ' +
+    'none at all.\n\n' +
+    'HFCs are not environmentally free, though: many have high global warming potential, which is ' +
+    'what is driving the current move to lower-GWP alternatives.',
+  source: cite.todo('Confirm the ozone depletion discussion against your EPA 608 material.'),
+  status: 'draft',
+});
+
+const r410aPressure = defineQuestion({
+  ...T,
+  id: 'hvac.3.1.r410a-pressure',
+  objective: '3.1',
+  kind: 'choice',
+  difficulty: 2,
+  prompt:
+    'Why can R-410A not simply be put into a system designed for R-22?',
+  choices: [
+    'R-410A runs at roughly 60% higher pressure and needs components rated for it, plus different oil',
+    'R-410A is chemically incompatible with copper',
+    'R-410A requires a larger metering device only',
+    'It can be, provided the charge is reduced',
+  ],
+  answer: 0,
+  explain:
+    'R-410A operates at substantially higher pressures — around 118 psig at 40°F where R-22 is ' +
+    '68.5 psig, and over 400 psig on the high side on a hot day. Components, service valves and ' +
+    'even gauges have to be rated for it.\n\n' +
+    'It also uses POE oil rather than mineral oil, and the two do not mix well. Residual mineral ' +
+    'oil in an old system will not return properly with R-410A.\n\n' +
+    'The general principle: retrofitting refrigerants is a manufacturer-specified procedure, not ' +
+    'something to improvise.',
+  source: cite.todo('Confirm retrofit guidance against your text and manufacturer literature.'),
+  status: 'draft',
+});
+
+// --- more 3.2 ---------------------------------------------------------------
+
+const acidFormation = defineQuestion({
+  ...T,
+  id: 'hvac.3.2.acid-formation',
+  objective: '3.2',
+  kind: 'choice',
+  difficulty: 3,
+  prompt:
+    'A compressor fails eighteen months after a repair. The oil tests acidic.\n\n' +
+    'What most likely happened at the time of the repair?',
+  choices: [
+    'Moisture was left in the system because it was not properly evacuated',
+    'The wrong refrigerant was used',
+    'The compressor was undersized',
+    'The system was overcharged',
+  ],
+  answer: 0,
+  explain:
+    'Water plus POE oil produces acid. Acid attacks motor windings and bearing surfaces, and the ' +
+    'failure comes months or years later — long enough that the connection to the original repair ' +
+    'is usually never made.\n\n' +
+    'The sequence is: system opened, moisture gets in, evacuation done by the clock rather than to ' +
+    '500 microns with a decay test, water sealed inside, acid forms slowly, compressor dies.\n\n' +
+    'This is why the evacuation procedure is not bureaucracy. It is the difference between a ' +
+    'repair that lasts and one that quietly destroys the most expensive component in the system.',
+  source: cite.todo('Confirm the acid formation discussion against your text.'),
+  status: 'draft',
+});
+
+const filterDrierPurpose = defineQuestion({
+  ...T,
+  id: 'hvac.3.2.filter-drier',
+  objective: '3.2',
+  kind: 'multi',
+  difficulty: 2,
+  prompt: 'What does a filter drier do? Select all that apply.',
+  choices: [
+    'Adsorbs moisture from the refrigerant',
+    'Traps particulate contamination',
+    'Adsorbs acid formed in the system',
+    'Adds refrigerant to the system',
+  ],
+  answers: [0, 1, 2],
+  explain:
+    'All three of the first ones. The desiccant core holds moisture and acid; the filter media ' +
+    'catches particles that would otherwise plug the metering device.\n\n' +
+    'A drier has finite capacity, which is why it is replaced whenever the system is opened. A ' +
+    'saturated drier stops protecting and can itself become a restriction — which is one of the ' +
+    'more common causes of the high-superheat-with-high-subcooling signature.\n\n' +
+    'Note the direction arrow on the body. Fitting one backwards is easy and defeats the purpose.',
+  source: cite.todo('Confirm the filter drier discussion against your text.'),
+  status: 'draft',
+});
+
+// --- more 3.3 / 3.4 ---------------------------------------------------------
+
+const sameOwnerRule = defineQuestion({
+  ...T,
+  id: 'hvac.3.3.same-owner',
+  objective: '3.3',
+  kind: 'choice',
+  difficulty: 3,
+  prompt:
+    'You recover refrigerant from one customer\'s system. Another customer needs a charge.\n\n' +
+    'Can you put the recovered refrigerant into the second system?',
+  choices: [
+    'Not without reclaiming it to ARI-700 specification at a certified reclaimer first',
+    'Yes, provided it is the same refrigerant type',
+    'Yes, provided you run it through a recovery machine filter',
+    'Yes, there is no restriction on recovered refrigerant',
+  ],
+  answer: 0,
+  explain:
+    'Recovered refrigerant may go back into the **same system**, or into one owned by the **same ' +
+    'person**. Moving it to a different owner requires reclamation to virgin specification, ' +
+    'verified by chemical analysis at a licensed facility.\n\n' +
+    'Field recycling — oil separation and filter-drying through a recovery machine — is not ' +
+    'sufficient for that. The distinction is legal, not a matter of how clean you think it is.',
+  source: cite.standard('40 CFR Part 82, Subpart F'),
+  status: 'verified',
+});
+
+const cylinderWeight = defineQuestion({
+  ...T,
+  id: 'hvac.3.4.cylinder-by-weight',
+  objective: '3.4',
+  kind: 'choice',
+  difficulty: 2,
+  prompt: 'Why must recovery cylinder fill level be determined by weight rather than by pressure?',
+  choices: [
+    'Pressure only reflects temperature while any liquid remains, so it says nothing about how full the cylinder is',
+    'Pressure gauges are not accurate enough',
+    'Weight is required by DOT but pressure would work',
+    'Pressure readings vary with the refrigerant type',
+  ],
+  answer: 0,
+  explain:
+    'While liquid and vapour coexist in the cylinder, the pressure is simply the saturation ' +
+    'pressure at that temperature. A cylinder 10% full and one 79% full read exactly the same at ' +
+    'the same temperature.\n\n' +
+    'Pressure only starts rising sharply once the cylinder is liquid-full — at which point you are ' +
+    'already past the danger point. By then the reading is warning you far too late.\n\n' +
+    'Put it on a scale. Know the tare weight, know the 80% limit, and watch the number.',
+  source: cite.standard('40 CFR Part 82, Subpart F; DOT cylinder requirements'),
+  status: 'verified',
+});
+
+const mixedCylinder = defineQuestion({
+  ...T,
+  id: 'hvac.3.4.never-mix',
+  objective: '3.4',
+  kind: 'choice',
+  difficulty: 2,
+  prompt:
+    'A recovery cylinder has R-22 in it. You are about to recover R-410A from another job.\n\n' +
+    'What must you do?',
+  choices: [
+    'Use a different cylinder — mixed refrigerant cannot be reclaimed and becomes disposal',
+    'Top it up; the reclaimer will separate them',
+    'Recover into it but label the cylinder as mixed',
+    'Vent the R-22 first, then recover the R-410A',
+  ],
+  answer: 0,
+  whyWrong: {
+    1: 'Reclaimers cannot economically separate mixed refrigerants and will reject the cylinder.',
+    2: 'Labelling does not make it reclaimable — it just documents that it is waste.',
+    3: 'Venting is illegal.',
+  },
+  explain:
+    'Mixed refrigerant cannot be reclaimed. The cylinder becomes hazardous waste, which you pay to ' +
+    'dispose of, and you lose the value of both refrigerants.\n\n' +
+    'Keep a dedicated cylinder per refrigerant, labelled clearly. It is a small amount of ' +
+    'organisation that avoids an expensive and entirely self-inflicted problem.',
+  source: cite.todo('Confirm cylinder handling practice against your text and EPA 608 material.'),
+  status: 'draft',
+});
+
+// --- more 3.5 / 3.6 ---------------------------------------------------------
+
+const leakSearchOrder = defineQuestion({
+  ...T,
+  id: 'hvac.3.5.find-the-leak',
+  objective: '3.5',
+  kind: 'choice',
+  difficulty: 2,
+  prompt:
+    'A system is low on charge. What is the correct response?',
+  choices: [
+    'Find and repair the leak, then evacuate and weigh in a full charge',
+    'Add refrigerant to bring it back to spec and note it for next season',
+    'Add refrigerant and a leak-sealing additive',
+    'Recover the remaining charge and replace the compressor',
+  ],
+  answer: 0,
+  explain:
+    'Refrigerant is not consumed — it runs in a sealed loop. If a system is low, it leaked, and ' +
+    'adding more without finding the leak means the customer pays again next season.\n\n' +
+    'Repeatedly topping up a leaking system is also a regulatory problem for larger equipment, ' +
+    'which has leak-rate thresholds and repair requirements.\n\n' +
+    'Leak sealants are controversial at best: they can plug metering devices and contaminate ' +
+    'recovery equipment. Most manufacturers void warranty coverage over them.',
+  source: cite.todo('Confirm leak repair guidance against your text and the leak repair provisions of 40 CFR Part 82.'),
+  status: 'draft',
+});
+
+const coreRequirement = defineQuestion({
+  ...T,
+  id: 'hvac.3.6.core-section',
+  objective: '3.6',
+  kind: 'choice',
+  difficulty: 2,
+  prompt: 'What does passing only the Core section of the EPA 608 exam certify you to do?',
+  choices: [
+    'Nothing on its own — Core is a prerequisite that must be paired with a type section',
+    'Work on small appliances',
+    'Purchase refrigerant but not service equipment',
+    'Work on any equipment under supervision',
+  ],
+  answer: 0,
+  explain:
+    'Core covers the science, regulations and safety common to all types, and every candidate must ' +
+    'pass it. But it certifies you for no equipment by itself.\n\n' +
+    'You need Core **plus** at least one type: Type I for small appliances, Type II for high ' +
+    'pressure (most residential and light commercial), Type III for low pressure. Pass all three ' +
+    'type sections and you hold Universal.\n\n' +
+    'Certification does not expire.',
+  source: cite.standard('40 CFR §82.161'),
+  status: 'verified',
+});
+
 export const SECTOR_3_QUESTIONS: readonly Question[] = [
   refrigerantFamilies,
+  chlorineOzone,
+  r410aPressure,
   blendGlide,
   oilCompatibility,
+  acidFormation,
+  filterDrierPurpose,
   threeRs,
+  sameOwnerRule,
   evacuationLevels,
   cylinderFill,
+  cylinderWeight,
+  mixedCylinder,
   leakDetection,
+  leakSearchOrder,
   nitrogenPurge,
   certificationTypes,
+  coreRequirement,
   salesRestriction,
 ];

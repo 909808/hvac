@@ -1708,3 +1708,400 @@ p:last-child {
     gap: 2px;
   }
 }
+
+/* ------------------------------------------------------------------------- */
+/* Lessons                                                                    */
+/* ------------------------------------------------------------------------- */
+
+.lesson-head {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.lesson-crumb {
+  display: grid;
+  gap: 2px;
+}
+
+.lesson-sector {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.lesson-position {
+  font-family: var(--mono);
+  font-size: 0.74rem;
+  color: var(--text-faint);
+}
+
+.lesson-dots {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.lesson-dot {
+  width: 34px;
+  height: 4px;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: var(--bg-inset);
+  cursor: pointer;
+}
+
+.lesson-dot-done { background: var(--ok); }
+.lesson-dot-active { background: var(--accent); }
+
+.lesson-body {
+  padding: 28px;
+}
+
+.lesson-title {
+  font-size: 1.6rem;
+  margin-bottom: 8px;
+}
+
+.lesson-summary {
+  color: var(--text-dim);
+  font-size: 1rem;
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.lesson-section {
+  margin-bottom: 28px;
+}
+
+.lesson-section:last-of-type {
+  margin-bottom: 12px;
+}
+
+.lesson-heading {
+  font-size: 1.05rem;
+  margin-bottom: 10px;
+  color: var(--text);
+}
+
+.lesson-prose {
+  font-size: 0.97rem;
+  line-height: 1.65;
+}
+
+.lesson-prose p {
+  margin-bottom: 0.9em;
+}
+
+/* --- key numbers ---------------------------------------------------------- */
+
+.key-numbers .lesson-heading {
+  color: var(--accent);
+}
+
+.key-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 8px;
+}
+
+.key-item {
+  display: grid;
+  gap: 2px;
+  padding: 12px 14px;
+  background: var(--bg-inset);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius-sm);
+}
+
+.key-value {
+  font-family: var(--mono);
+  font-size: 1.02rem;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.key-label {
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.key-note {
+  font-size: 0.76rem;
+  color: var(--text-faint);
+}
+
+/* --- worked examples ------------------------------------------------------ */
+
+.worked {
+  background: var(--bg-inset);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 18px;
+}
+
+.worked .lesson-heading {
+  color: var(--warn);
+}
+
+.worked-problem {
+  font-size: 0.95rem;
+  padding: 12px 14px;
+  background: var(--bg-raised);
+  border-radius: var(--radius-sm);
+  margin-bottom: 14px;
+}
+
+.worked-steps {
+  margin: 0 0 12px;
+  padding-left: 22px;
+  display: grid;
+  gap: 10px;
+}
+
+.worked-step {
+  font-size: 0.9rem;
+}
+
+.worked-action {
+  display: block;
+  color: var(--text-dim);
+}
+
+.worked-result {
+  display: block;
+  font-family: var(--mono);
+  font-size: 0.87rem;
+  color: var(--accent);
+  margin-top: 3px;
+}
+
+.worked-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.worked-answer {
+  padding: 12px 14px;
+  background: var(--ok-dim);
+  border: 1px solid var(--ok);
+  border-radius: var(--radius-sm);
+  font-family: var(--mono);
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.worked-answer-label {
+  display: block;
+  font-family: var(--sans);
+  font-size: 0.66rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ok);
+  font-weight: 500;
+  margin-bottom: 3px;
+}
+
+.worked-moral {
+  font-size: 0.88rem;
+  color: var(--text-dim);
+  font-style: italic;
+}
+
+/* --- tables --------------------------------------------------------------- */
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+.lesson-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.87rem;
+  min-width: 420px;
+}
+
+.lesson-table th,
+.lesson-table td {
+  text-align: left;
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.lesson-table thead th {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-faint);
+  border-bottom: 1px solid var(--border-strong);
+}
+
+.lesson-table tbody th {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.lesson-table tbody tr:hover {
+  background: var(--bg-inset);
+}
+
+/* --- callouts ------------------------------------------------------------- */
+
+.callout {
+  padding: 16px 18px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  border-left-width: 3px;
+  background: var(--bg-inset);
+}
+
+.callout-tip { border-left-color: var(--accent); }
+.callout-warning { border-left-color: var(--bad); background: var(--bad-dim); }
+.callout-trap { border-left-color: var(--warn); background: var(--warn-dim); }
+
+.callout-head {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 8px;
+  font-size: 0.97rem;
+}
+
+.callout-icon {
+  font-size: 1.05rem;
+}
+
+.callout-body {
+  font-size: 0.91rem;
+  color: var(--text-dim);
+}
+
+.callout-body p {
+  margin-bottom: 0.8em;
+}
+
+.lesson-nav {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 40px;
+}
+
+/* --- hotspot -------------------------------------------------------------- */
+
+.topo-pickable {
+  cursor: pointer;
+}
+
+.topo-pickable .topo-box {
+  transition: stroke 0.12s, fill 0.12s;
+}
+
+.topo-pickable:hover .topo-box {
+  stroke: var(--accent);
+  stroke-width: 2;
+  fill: var(--bg-inset);
+}
+
+.topo-pickable:focus {
+  outline: none;
+}
+
+.topo-pickable:focus-visible .topo-box {
+  stroke: var(--accent);
+  stroke-width: 2.5;
+}
+
+.topo-answer .topo-box {
+  stroke: var(--ok);
+  stroke-width: 2.5;
+  fill: var(--ok-dim);
+}
+
+.topo-chosen .topo-box {
+  stroke: var(--bad);
+  stroke-width: 2.5;
+  fill: var(--bad-dim);
+}
+
+.hotspot .topology-wrap {
+  margin-bottom: 10px;
+}
+
+@media (max-width: 640px) {
+  .lesson-body {
+    padding: 18px;
+  }
+
+  .lesson-title {
+    font-size: 1.3rem;
+  }
+
+  .key-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* --- archived tracks ------------------------------------------------------ */
+
+.archived-shelf {
+  margin-bottom: 20px;
+}
+
+.archived-shelf summary {
+  cursor: pointer;
+  font-size: 0.82rem;
+  color: var(--text-faint);
+  padding: 4px 0;
+  list-style: none;
+}
+
+.archived-shelf summary::-webkit-details-marker {
+  display: none;
+}
+
+.archived-shelf summary::before {
+  content: "▸ ";
+}
+
+.archived-shelf[open] summary::before {
+  content: "▾ ";
+}
+
+.archived-shelf .track-tabs {
+  margin-top: 10px;
+  margin-bottom: 6px;
+}
+
+.archived-notice {
+  border-left: 3px solid var(--warn);
+  font-size: 0.88rem;
+  color: var(--text-dim);
+  padding: 14px 18px;
+}
+
+/* Inline emphasis inside lesson and question prose. */
+.lesson-prose strong,
+.callout-body strong,
+.reveal-explain strong,
+.lesson-table strong,
+.worked-problem strong,
+.prompt strong {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.lesson-prose em,
+.callout-body em,
+.reveal-explain em,
+.worked-problem em,
+.prompt em {
+  font-style: italic;
+}

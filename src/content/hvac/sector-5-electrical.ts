@@ -298,15 +298,302 @@ const capacitorDischarge = defineQuestion({
   status: 'draft',
 });
 
+// --- more 5.1 / 5.2 ---------------------------------------------------------
+
+const ohmsCalc = defineQuestion({
+  ...T,
+  id: 'hvac.5.1.resistance-from-readings',
+  objective: '5.1',
+  kind: 'input',
+  difficulty: 2,
+  prompt:
+    'A 240 V heating element draws 20 A.\n\nWhat is its resistance, in ohms?',
+  placeholder: 'Ω',
+  accept: ['12'],
+  tolerance: 0.5,
+  explain:
+    'R = E ÷ I = 240 ÷ 20 = **12 Ω**.\n\n' +
+    'This form gets the most use in the field, because voltage and current are what a meter reads ' +
+    'directly on a live circuit. You rarely measure resistance on something energised — and should ' +
+    'never try.\n\n' +
+    'Cross-check with power: P = E × I = 240 × 20 = 4,800 W, which is a plausible size for one ' +
+    'heat strip.',
+  source: cite.standard("Ohm's law"),
+  status: 'verified',
+});
+
+const parallelIntuition = defineQuestion({
+  ...T,
+  id: 'hvac.5.2.parallel-lower',
+  objective: '5.2',
+  kind: 'choice',
+  difficulty: 2,
+  prompt:
+    'Two 20 Ω resistances are wired in parallel. Without calculating, what do you know about the total?',
+  choices: [
+    'It is less than 20 Ω, because each added path gives current somewhere else to go',
+    'It is 40 Ω, because resistances add',
+    'It is exactly 20 Ω, because they are identical',
+    'It depends on the applied voltage',
+  ],
+  answer: 0,
+  explain:
+    'Total resistance in parallel is always **lower than the smallest branch**. Adding a path makes ' +
+    'it easier for current to flow, not harder.\n\n' +
+    'For two equal resistances the total is exactly half — 10 Ω here. The general formula for two ' +
+    'is (R₁ × R₂) ÷ (R₁ + R₂).\n\n' +
+    'If you ever calculate a parallel total that is higher than one of the branches, you have made ' +
+    'an arithmetic error.',
+  source: cite.standard('Parallel resistance'),
+  status: 'verified',
+});
+
+const noVoltageAnywhere = defineQuestion({
+  ...T,
+  id: 'hvac.5.2.dead-control-circuit',
+  objective: '5.2',
+  kind: 'choice',
+  difficulty: 2,
+  prompt:
+    'Nothing in a system operates. You measure 0 V across every device in the 24 V control circuit, ' +
+    'including the contactor coil.\n\nWhere do you look?',
+  choices: [
+    'At the transformer — no secondary voltage means nothing downstream can operate',
+    'At the contactor coil, which must be shorted',
+    'At the thermostat, which must be stuck closed',
+    'At the compressor windings',
+  ],
+  answer: 0,
+  explain:
+    'Zero volts across *everything* is different from zero volts across most things. In a working ' +
+    'circuit with an open switch, that switch shows full voltage — something has to be dropping ' +
+    'it.\n\n' +
+    'Nothing anywhere means there is no supply to drop. Check the transformer secondary for 24 V, ' +
+    'and its primary for line voltage. Also check any fuse or breaker in the control circuit — many ' +
+    'boards have a small automotive-style fuse that opens on a shorted thermostat wire.',
+  source: cite.todo('Confirm the control circuit troubleshooting sequence against your text.'),
+  status: 'draft',
+});
+
+// --- more 5.3 / 5.4 ---------------------------------------------------------
+
+const groundedCompressor = defineQuestion({
+  ...T,
+  id: 'hvac.5.3.grounded-winding',
+  objective: '5.3',
+  kind: 'choice',
+  difficulty: 2,
+  prompt:
+    'You measure from a compressor terminal to the shell and read 40 Ω.\n\nWhat does that mean?',
+  choices: [
+    'The winding is grounded — the compressor is failed and must be replaced',
+    'That is normal winding resistance',
+    'The compressor needs a new capacitor',
+    'The reading is meaningless without the other terminals',
+  ],
+  answer: 0,
+  explain:
+    'There should be **no continuity at all** between any terminal and the shell. The windings are ' +
+    'insulated from the housing, and a good compressor reads open — effectively infinite ' +
+    'resistance.\n\n' +
+    'Any measurable resistance to ground means the insulation has broken down. The compressor is ' +
+    'failed, and a grounded compressor will keep tripping the breaker.\n\n' +
+    'A grounded compressor often also means an acid burnout, so check the oil and fit a suction ' +
+    'line drier when replacing it, or the new one will die the same way.',
+  source: cite.todo('Confirm compressor testing procedure against your text.'),
+  status: 'draft',
+});
+
+const dualCapacitorTest = defineQuestion({
+  ...T,
+  id: 'hvac.5.4.dual-capacitor-halves',
+  objective: '5.4',
+  kind: 'choice',
+  difficulty: 2,
+  prompt:
+    'A dual run capacitor is marked 45/5 µF. The fan runs but the compressor will not start.\n\n' +
+    'How do you test it?',
+  choices: [
+    'Measure HERM-to-C and FAN-to-C separately — one half can fail while the other tests fine',
+    'Measure HERM-to-FAN to get the total',
+    'Measure across the whole capacitor and compare to 50 µF',
+    'A dual capacitor cannot be tested in place',
+  ],
+  answer: 0,
+  explain:
+    'A dual capacitor is two capacitors in one can, sharing a common terminal. The 45 µF section ' +
+    '(HERM) serves the compressor and the 5 µF section (FAN) serves the condenser fan.\n\n' +
+    'They fail independently. A fan that runs while the compressor will not is a strong hint that ' +
+    'the HERM half has gone while the FAN half is fine.\n\n' +
+    'Measure each against its rating with a ±6% tolerance. And discharge each half separately ' +
+    'before touching it.',
+  source: cite.todo('Confirm dual capacitor testing against your text.'),
+  status: 'draft',
+});
+
+const capacitorTolerance = defineQuestion({
+  ...T,
+  id: 'hvac.5.4.tolerance-judgement',
+  objective: '5.4',
+  kind: 'choice',
+  difficulty: 2,
+  prompt:
+    'A 40 µF run capacitor measures 36.5 µF.\n\nWhat is your verdict?',
+  choices: [
+    'Out of tolerance — 36.5 is about 91% of rating, below the ±6% band. Replace it.',
+    'Within tolerance — close enough to 40',
+    'Cannot judge without the motor running',
+    'Out of tolerance, but only replace it if the motor fails to start',
+  ],
+  answer: 0,
+  explain:
+    '36.5 ÷ 40 = 91.25%, which is nearly 9% low. Run capacitors are held to ±6%, so this one is ' +
+    'outside the band.\n\n' +
+    'The reason not to wait for a hard failure: a weak capacitor does not fail cleanly. The motor ' +
+    'still tries to start, draws locked-rotor current, heats up and trips its overload — ' +
+    'intermittently. That intermittent hard-starting is hard on the compressor, and the customer ' +
+    'experiences it as a system that works some days and not others.',
+  source: cite.todo('Confirm run capacitor tolerance against your text.'),
+  status: 'draft',
+});
+
+// --- more 5.5 / 5.6 / 5.7 ---------------------------------------------------
+
+const contactorChatterCause = defineQuestion({
+  ...T,
+  id: 'hvac.5.5.chatter-diagnosis',
+  objective: '5.5',
+  kind: 'choice',
+  difficulty: 3,
+  prompt:
+    'A contactor pulls in and drops out rapidly, over and over.\n\n' +
+    'When should you take your voltage reading?',
+  choices: [
+    'While it is trying to pull in — control voltage sagging under load is the whole diagnosis',
+    'With the system off, to get a stable baseline',
+    'After it has settled, whichever state that is',
+    'At the line side, since that is where the power comes from',
+  ],
+  answer: 0,
+  explain:
+    'Chatter means the coil gets just enough voltage to pull in, and then not enough to hold. The ' +
+    'fault only exists **under load**.\n\n' +
+    'A reading taken with nothing energised will look perfectly fine and tell you nothing. Measure ' +
+    'the 24 V while the coil is trying to pull in, and watch it collapse.\n\n' +
+    'Causes are an undersized or failing transformer, a poor connection adding resistance, or a ' +
+    'shorted coil drawing more than the transformer can supply. Chatter is destructive too — each ' +
+    'bounce arcs across the contacts and burns them.',
+  source: cite.todo('Confirm the contactor chatter diagnosis against your service text.'),
+  status: 'draft',
+});
+
+const missingCommon = defineQuestion({
+  ...T,
+  id: 'hvac.5.5.missing-c-wire',
+  objective: '5.5',
+  kind: 'choice',
+  difficulty: 2,
+  prompt:
+    'A newly installed Wi-Fi thermostat keeps dropping offline and occasionally reboots itself. The ' +
+    'old mechanical thermostat worked fine.\n\nWhat is the likely cause?',
+  choices: [
+    'No common (C) wire, so the thermostat cannot draw continuous power',
+    'The thermostat is faulty and should be replaced',
+    'The transformer is undersized for the equipment',
+    'The Y wire is loose',
+  ],
+  answer: 0,
+  explain:
+    'A mechanical thermostat is just a switch — it needs no power of its own. A smart thermostat ' +
+    'needs continuous power for its display, processor and radio, and that requires a return path: ' +
+    'the C wire.\n\n' +
+    'Without one, some thermostats "power steal" through the load, which works marginally and ' +
+    'produces exactly this behaviour — dropping offline, rebooting, sometimes chattering the ' +
+    'equipment.\n\n' +
+    'The fix is running a C wire, or fitting an add-a-wire adapter. This is one of the most common ' +
+    'calls after a customer-installed smart thermostat.',
+  source: cite.todo('Confirm the C wire discussion against your text.'),
+  status: 'draft',
+});
+
+const ladderRungMeaning = defineQuestion({
+  ...T,
+  id: 'hvac.5.6.what-a-rung-is',
+  objective: '5.6',
+  kind: 'choice',
+  difficulty: 2,
+  prompt: 'On a ladder diagram, what does a single rung represent?',
+  choices: [
+    'One complete circuit: from one power rail, through its controls, through a load, to the other rail',
+    'One physical wire in the equipment',
+    'One step in the sequence of operation',
+    'One component in the cabinet',
+  ],
+  answer: 0,
+  explain:
+    'Each rung is a complete circuit path. Reading left to right gives you every condition that has ' +
+    'to be satisfied for that load to operate.\n\n' +
+    'The convention of putting controls before the load is what makes voltage-drop troubleshooting ' +
+    'work: you walk along the rung with a meter, and the point where voltage disappears is the ' +
+    'fault.\n\n' +
+    'Relay contacts are labelled with the coil that operates them, so a contact marked CR1 is ' +
+    'controlled by the CR1 coil elsewhere in the diagram. Following those cross-references is how ' +
+    'you trace a sequence.',
+  source: cite.todo('Confirm the ladder diagram conventions against your text.'),
+  status: 'draft',
+});
+
+const neverJumper = defineQuestion({
+  ...T,
+  id: 'hvac.5.7.never-jumper-a-safety',
+  objective: '5.7',
+  kind: 'choice',
+  difficulty: 3,
+  prompt:
+    'You have found an open high-pressure switch. What should you do next?',
+  choices: [
+    'Find out why it opened — it is reporting a real condition until proven otherwise',
+    'Jumper it out so the system runs, then diagnose',
+    'Replace the switch, since an open switch is a failed switch',
+    'Reset it and leave, since it may have been a one-off',
+  ],
+  answer: 0,
+  whyWrong: {
+    1: 'Jumpering removes the protection that is stopping the system destroying itself.',
+    2: 'A switch doing its job is not a failed switch.',
+    3: 'A high-pressure trip has a cause, and it will happen again.',
+  },
+  explain:
+    'A safety switch that has opened is telling you something. High pressure means heat is not ' +
+    'leaving the condenser: dirty coil, failed fan, overcharge, non-condensables, or blocked ' +
+    'airflow.\n\n' +
+    'Jumpering it lets the system run past the pressure the switch exists to prevent. That is how ' +
+    'compressors get destroyed and, on larger equipment, how relief devices discharge.\n\n' +
+    'Diagnose the cause. If everything checks out and the switch still will not close with normal ' +
+    'pressures, *then* it is a failed switch.',
+  source: cite.todo('Confirm safety control practice against your service text.'),
+  status: 'draft',
+});
+
 export const SECTOR_5_QUESTIONS: readonly Question[] = [
   ohmsRelationships,
+  ohmsCalc,
   seriesParallelBehaviour,
+  parallelIntuition,
   openSwitchVoltage,
+  noVoltageAnywhere,
   motorTerminals,
+  groundedCompressor,
   capacitorRoles,
+  dualCapacitorTest,
+  capacitorTolerance,
   controlComponents,
+  contactorChatterCause,
   thermostatWiring,
+  missingCommon,
   ladderReading,
+  ladderRungMeaning,
   meterVerification,
   capacitorDischarge,
+  neverJumper,
 ];

@@ -234,12 +234,220 @@ const heatingModeCharge = defineQuestion({
   status: 'draft',
 });
 
+// --- hotspot ----------------------------------------------------------------
+
+const findHeatingCondenser = defineQuestion({
+  ...T,
+  id: 'hvac.9.1.hotspot-heating-condenser',
+  objective: '9.1',
+  kind: 'hotspot',
+  difficulty: 2,
+  topology: heatingModeDiagram,
+  prompt: 'The system is in HEATING mode. Click the coil that is acting as the condenser.',
+  answer: 'indoor',
+  whyWrong: {
+    outdoor: 'In heating the outdoor coil is the EVAPORATOR — it absorbs heat from outdoor air.',
+    comp: 'The compressor raises pressure. It is not a coil.',
+    rv: 'The reversing valve directs flow; it is not where heat is exchanged.',
+    meter: 'The metering device drops pressure between the two coils.',
+  },
+  explain:
+    'In heating, the reversing valve sends hot discharge gas to the **indoor** coil, which condenses ' +
+    'and rejects that heat into the house. Meanwhile the outdoor coil boils refrigerant, absorbing ' +
+    'heat from outdoor air.\n\n' +
+    'The roles swap entirely in cooling. That is why heat pump literature says "indoor coil" and ' +
+    '"outdoor coil" — the words evaporator and condenser describe what a coil is doing right now, ' +
+    'not where it is mounted.',
+  source: cite.todo('Confirm the heating mode description against your text.'),
+  status: 'draft',
+});
+
+// --- more 9.1 / 9.2 ---------------------------------------------------------
+
+const reversingValveStuck = defineQuestion({
+  ...T,
+  id: 'hvac.9.1.valve-mid-position',
+  objective: '9.1',
+  kind: 'choice',
+  difficulty: 3,
+  prompt:
+    'A heat pump produces weak heating and weak cooling in both modes. Superheat is low and the ' +
+    'suction line is warm.\n\nWhat should you suspect?',
+  choices: [
+    'A reversing valve stuck part-way, allowing hot gas to leak straight into the suction line',
+    'An undercharge',
+    'A dirty outdoor coil',
+    'A failed defrost board',
+  ],
+  answer: 0,
+  explain:
+    'A reversing valve that has not shifted fully lets discharge gas bypass internally into the ' +
+    'suction side. The system then works against itself in both modes — hot gas returning to the ' +
+    'compressor instead of going where it should.\n\n' +
+    'The tell is a warm suction line with low superheat, and poor performance in *both* directions. ' +
+    'A charge or airflow problem degrades one mode more than the other; a stuck valve degrades ' +
+    'both equally.\n\n' +
+    'Feeling the pipe temperatures at the valve body confirms it: the two suction-side ports should ' +
+    'be at clearly different temperatures, and on a leaking valve they converge.',
+  source: cite.todo('Confirm the reversing valve failure discussion against your text.'),
+  status: 'draft',
+});
+
+const defrostSteam = defineQuestion({
+  ...T,
+  id: 'hvac.9.2.steam-is-normal',
+  objective: '9.2',
+  kind: 'choice',
+  difficulty: 1,
+  prompt:
+    'A customer reports steam pouring off their outdoor unit on a cold morning and is worried it is ' +
+    'on fire.\n\nWhat is happening?',
+  choices: [
+    'Normal defrost — melting frost is evaporating off a warm coil',
+    'A refrigerant leak vaporising',
+    'The compressor is overheating',
+    'Condensate is freezing on the fan blade',
+  ],
+  answer: 0,
+  explain:
+    'During defrost the outdoor coil gets hot enough to melt its accumulated frost, and that water ' +
+    'flashes to vapour in cold air. It looks dramatic and it is entirely normal.\n\n' +
+    'A defrost cycle typically lasts a few minutes and ends on coil temperature. What *is* worth ' +
+    'investigating is a unit defrosting far more often than it should, or one that never defrosts ' +
+    'and ices solid.\n\n' +
+    'Worth explaining to customers proactively — it is a common and easily reassured call.',
+  source: cite.todo('Confirm the defrost discussion against your text.'),
+  status: 'draft',
+});
+
+const defrostAuxHeat = defineQuestion({
+  ...T,
+  id: 'hvac.9.2.why-aux-during-defrost',
+  objective: '9.2',
+  kind: 'choice',
+  difficulty: 3,
+  prompt: 'Why does auxiliary heat energise during a defrost cycle?',
+  choices: [
+    'The indoor coil is absorbing heat during defrost, so aux tempers the supply air',
+    'To melt the frost faster',
+    'To protect the compressor from liquid return',
+    'To keep the outdoor fan from freezing',
+  ],
+  answer: 0,
+  explain:
+    'Defrost runs the system in **cooling**. That means the indoor coil is now the evaporator, ' +
+    'absorbing heat from the house — exactly the wrong direction on a winter morning.\n\n' +
+    'Without auxiliary heat, the supply registers would blow cold air at the occupants for the ' +
+    'several minutes defrost takes. The strips offset that.\n\n' +
+    'It is also why a heat pump defrosting frequently is expensive: every cycle runs resistance ' +
+    'heat as well as reversing the system.',
+  source: cite.todo('Confirm the defrost sequence against your text.'),
+  status: 'draft',
+});
+
+// --- more 9.3 / 9.4 / 9.5 ---------------------------------------------------
+
+const auxRunningTooMuch = defineQuestion({
+  ...T,
+  id: 'hvac.9.3.excessive-aux',
+  objective: '9.3',
+  kind: 'choice',
+  difficulty: 3,
+  prompt:
+    'A customer\'s electric bill has jumped. You find auxiliary heat running at 45°F outdoor ' +
+    'temperature, well above the expected balance point.\n\nWhat does that suggest?',
+  choices: [
+    'The heat pump is not producing its rated capacity, so aux is making up a shortfall it should not have to',
+    'The balance point is set correctly and this is normal',
+    'The thermostat is in emergency heat',
+    'The outdoor temperature sensor is reading low',
+  ],
+  answer: 0,
+  whyWrong: {
+    1: 'Aux at 45°F is well above a typical 30–35°F balance point.',
+    2: 'Possible, but emergency heat locks the compressor off entirely — worth checking, but the compressor is running here.',
+    3: 'Also worth checking, but it is the less likely of the explanations.',
+  },
+  explain:
+    'Above the balance point the heat pump alone should meet the load. Aux running at 45°F means ' +
+    'the heat pump is delivering less than it should.\n\n' +
+    'Causes to check: low charge, restricted outdoor airflow, a partially stuck reversing valve, ' +
+    'a failing compressor, or low indoor airflow. Any of these reduce heating capacity and force ' +
+    'the strips to cover the gap — at two to four times the running cost.\n\n' +
+    'Also check the thermostat configuration. Some are set with an aux lockout temperature, and a ' +
+    'misconfigured one brings strips on far too readily.',
+  source: cite.todo('Confirm the aux heat diagnosis against your text.'),
+  status: 'draft',
+});
+
+const balancePointLines = defineQuestion({
+  ...T,
+  id: 'hvac.9.4.two-lines',
+  objective: '9.4',
+  kind: 'choice',
+  difficulty: 3,
+  prompt:
+    'As outdoor temperature falls, what happens to building heat loss and heat pump capacity?',
+  choices: [
+    'Heat loss rises while capacity falls — they cross at the balance point',
+    'Both rise together',
+    'Both fall together',
+    'Heat loss falls while capacity rises',
+  ],
+  answer: 0,
+  explain:
+    'Building heat loss rises as it gets colder, because the temperature difference driving heat ' +
+    'out of the building gets bigger.\n\n' +
+    'Heat pump capacity falls, because the outdoor coil has less temperature difference to work ' +
+    'with — there is still heat in cold air, but less of a gradient to pull it across.\n\n' +
+    'Those two lines cross at the **balance point**, typically somewhere around 30–35°F for ' +
+    'residential equipment. Below it, aux makes up the difference. Above it, aux operation is ' +
+    'waste and worth investigating.',
+  source: cite.todo('Confirm the balance point discussion against your text.'),
+  status: 'draft',
+});
+
+const heatPumpAirflowCheck = defineQuestion({
+  ...T,
+  id: 'hvac.9.5.heating-delta-t',
+  objective: '9.5',
+  kind: 'choice',
+  difficulty: 3,
+  prompt:
+    'In heating mode, what should you expect from the air temperature rise across the indoor coil, ' +
+    'compared with a gas furnace?',
+  choices: [
+    'Much smaller — a heat pump delivers a large volume of moderately warm air rather than a small volume of hot air',
+    'Much larger, because heat pumps concentrate heat',
+    'About the same, since both are sized to the same load',
+    'It varies randomly and is not a useful measurement',
+  ],
+  answer: 0,
+  explain:
+    'A gas furnace might produce a 40–70°F rise, delivering genuinely hot air. A heat pump typically ' +
+    'produces something like 15–25°F, so supply air arrives around 90–100°F.\n\n' +
+    'That is below body temperature, which is why customers often report heat pump air feeling ' +
+    '"cold" even when the system is working perfectly and the house is at setpoint. It is worth ' +
+    'explaining before it becomes a complaint.\n\n' +
+    'It also means you cannot judge a heat pump by furnace standards. Check the manufacturer ' +
+    'literature for the expected rise at the given outdoor temperature.',
+  source: cite.todo('Confirm heat pump temperature rise expectations against your text.'),
+  status: 'draft',
+});
+
 export const SECTOR_9_QUESTIONS: readonly Question[] = [
   coilRoles,
+  findHeatingCondenser,
   reversingValveFailure,
+  reversingValveStuck,
   defrostCycle,
+  defrostSteam,
+  defrostAuxHeat,
   defrostTermination,
   auxVsEmergency,
+  auxRunningTooMuch,
   balancePoint,
+  balancePointLines,
   heatingModeCharge,
+  heatPumpAirflowCheck,
 ];
