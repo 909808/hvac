@@ -15,9 +15,8 @@ export interface RunRecord {
 }
 
 export interface Profile {
-  readonly version: 3;
+  readonly version: 4;
   readonly cards: Readonly<Record<string, CardState>>;
-  readonly xp: number;
   readonly bestStreak: number;
   readonly runs: readonly RunRecord[];
   /** Best score per mode, for the "beat your record" loop. */
@@ -30,7 +29,7 @@ const STORAGE_KEY = 'hvac-trainer:profile:v3';
 const MAX_RUNS = 200;
 
 export function emptyProfile(): Profile {
-  return { version: 3, cards: {}, xp: 0, bestStreak: 0, runs: [], bests: {}, checkpoints: {} };
+  return { version: 4, cards: {}, bestStreak: 0, runs: [], bests: {}, checkpoints: {} };
 }
 
 export function loadProfile(storage: Storage | undefined = safeStorage()): Profile {
@@ -38,12 +37,13 @@ export function loadProfile(storage: Storage | undefined = safeStorage()): Profi
   try {
     const raw = storage.getItem(STORAGE_KEY);
     if (!raw) return emptyProfile();
-    const parsed = JSON.parse(raw) as Partial<Profile>;
-    if (parsed.version !== 3) return emptyProfile();
+    const parsed = JSON.parse(raw) as Omit<Partial<Profile>, 'version'> & { version?: number };
+    // v3 carried an `xp` total that nothing spent. Dropping it is a clean
+    // upgrade rather than a reset — every other field survives.
+    if (parsed.version !== 3 && parsed.version !== 4) return emptyProfile();
     return {
-      version: 3,
+      version: 4,
       cards: parsed.cards ?? {},
-      xp: parsed.xp ?? 0,
       bestStreak: parsed.bestStreak ?? 0,
       runs: parsed.runs ?? [],
       bests: parsed.bests ?? {},
@@ -120,7 +120,6 @@ export function recordRun(profile: Profile, run: RunRecord, streak: number): Pro
   const previousBest = profile.bests[run.mode] ?? 0;
   return {
     ...profile,
-    xp: profile.xp + run.score,
     bestStreak: Math.max(profile.bestStreak, streak),
     runs: [run, ...profile.runs].slice(0, MAX_RUNS),
     bests: { ...profile.bests, [run.mode]: Math.max(previousBest, run.score) },
@@ -186,17 +185,4 @@ export function weakest(
     .sort((a, b) => a.score - b.score)
     .slice(0, limit)
     .map((x) => x.q);
-}
-
-export function levelFor(xp: number): { level: number; into: number; needed: number } {
-  // Each level costs 100 more than the last: 100, 300, 600, 1000, ...
-  let level = 1;
-  let remaining = xp;
-  let cost = 100;
-  while (remaining >= cost) {
-    remaining -= cost;
-    level++;
-    cost += 100;
-  }
-  return { level, into: remaining, needed: cost };
 }

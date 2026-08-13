@@ -9,6 +9,11 @@ import { modeById, type ModeId } from '../modes';
 export interface PlayContext {
   readonly session: Session;
   readonly mode: ModeId;
+  /**
+   * Replaces the mode name in the HUD. Used by career jobs, where "Drill" is the
+   * wrong word for standing in somebody's plant room working something out.
+   */
+  readonly headline?: string;
   /** Stable per-question shuffle, so re-rendering does not reorder the options. */
   readonly shuffleSeed: number;
   onAnswer(response: Response): void;
@@ -119,12 +124,16 @@ function renderHud(ctx: PlayContext, snap: ReturnType<Session['snapshot']>): HTM
       h(
         'div',
         { class: 'hud-title' },
-        h('span', { class: 'hud-glyph', text: mode.glyph }),
-        h('span', { text: mode.name }),
+        h('span', { class: 'hud-glyph', text: ctx.headline ? '🧰' : mode.glyph }),
+        h('span', { text: ctx.headline ?? mode.name }),
         h('span', { class: 'hud-count', text: `${snap.index + 1} / ${snap.total}` }),
       ),
       stats,
-      h('button', { class: 'btn btn-ghost', onClick: ctx.onQuit, text: 'End run' }),
+      h('button', {
+        class: 'btn btn-ghost',
+        onClick: ctx.onQuit,
+        text: ctx.headline ? 'Wrap up' : 'End run',
+      }),
     ),
     progress,
   );

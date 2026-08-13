@@ -10,6 +10,7 @@ export default defineConfig({
       '@engine': resolvePath('./src/engine'),
       '@content': resolvePath('./src/content'),
       '@games': resolvePath('./src/games'),
+      '@career': resolvePath('./src/career'),
       '@ui': resolvePath('./src/ui'),
     },
   },

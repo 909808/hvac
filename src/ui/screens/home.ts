@@ -1,4 +1,4 @@
-import { levelFor, objectiveProgress, type Profile } from '@engine/profile';
+import { objectiveProgress, type Profile } from '@engine/profile';
 import type { Question, Track } from '@engine/types';
 import { contentStats } from '@content/index';
 import { h } from '../dom';
@@ -18,7 +18,6 @@ export interface HomeContext {
 export function renderHome(ctx: HomeContext): HTMLElement {
   const forTrack = ctx.pool.filter((q) => q.track === ctx.track.id);
   const stats = contentStats(forTrack);
-  const level = levelFor(ctx.profile.xp);
 
   const root = h('div', { class: 'home' });
 
@@ -37,17 +36,6 @@ export function renderHome(ctx: HomeContext): HTMLElement {
         'div',
         { class: 'masthead-meta' },
         h('span', { class: 'chip chip-rev', text: ctx.track.revision }),
-        h(
-          'div',
-          { class: 'level-box' },
-          h('span', { class: 'level-num', text: `Level ${level.level}` }),
-          h(
-            'div',
-            { class: 'level-track' },
-            h('div', { class: 'level-fill', style: `width: ${(level.into / level.needed) * 100}%` }),
-          ),
-          h('span', { class: 'level-xp', text: `${level.into} / ${level.needed} XP` }),
-        ),
       ),
     ),
   );

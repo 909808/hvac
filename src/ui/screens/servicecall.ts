@@ -1,10 +1,32 @@
 import { fault, measurementDef, type FaultId, type MeasurementId } from '@games/hvac/system';
 import { measurementGroups, type ServiceCallRun } from '@games/hvac/servicecall';
+import { toolForMeasurement } from '@career/tools';
 import { h, paragraphs } from '../dom';
 import { renderCircuit } from '../circuit';
 
 export interface ServiceCallContext {
   readonly run: ServiceCallRun;
+  /**
+   * Measurements the van can actually take. Omitted in Practice mode, where the
+   * toolbox is idealised; supplied on career calls, where it is not.
+   */
+  readonly available?: ReadonlySet<MeasurementId>;
+  /** Shown above the measurement list on career calls. */
+  readonly headline?: string;
+  /**
+   * What the customer said when they booked the call.
+   *
+   * The simulator writes its own complaint from the fault it generated. On a
+   * career job there is also the complaint that got the job onto the board, and
+   * the two will not match — so the booked one becomes the work order and the
+   * generated one becomes what they tell you at the door, which is how a real
+   * call goes anyway.
+   */
+  readonly bookedComplaint?: string;
+  /** Debrief button text. "Next call" in Practice, "Settle up" on a career job. */
+  readonly replayLabel?: string;
+  /** Abandon button text. */
+  readonly leaveLabel?: string;
   onMeasure(id: MeasurementId): void;
   onDiagnose(id: FaultId): void;
   onReplay(): void;
@@ -40,7 +62,7 @@ function renderCall(ctx: ServiceCallContext): HTMLElement {
           'div',
           { class: 'hud-title' },
           h('span', { class: 'hud-glyph', text: '🔧' }),
-          h('span', { text: 'Service Call' }),
+          h('span', { text: ctx.headline ?? 'Service Call' }),
           h('span', { class: 'hud-count', text: `tier ${scenario.tier}` }),
         ),
         h(
@@ -59,7 +81,11 @@ function renderCall(ctx: ServiceCallContext): HTMLElement {
             h('span', { class: 'stat-value', text: `${TIME_BUDGET} min` }),
           ),
         ),
-        h('button', { class: 'btn btn-ghost', onClick: ctx.onHome, text: 'Leave call' }),
+        h('button', {
+          class: 'btn btn-ghost',
+          onClick: ctx.onHome,
+          text: ctx.leaveLabel ?? 'Leave call',
+        }),
       ),
       h(
         'div',
@@ -78,7 +104,13 @@ function renderCall(ctx: ServiceCallContext): HTMLElement {
       'section',
       { class: 'panel ticket' },
       h('h2', { class: 'panel-title', text: 'Work order' }),
-      h('p', { class: 'ticket-complaint', text: `“${scenario.complaint}”` }),
+      h('p', {
+        class: 'ticket-complaint',
+        text: `“${ctx.bookedComplaint ?? scenario.complaint}”`,
+      }),
+      ctx.bookedComplaint
+        ? h('p', { class: 'ticket-onsite', text: `On arrival: “${scenario.complaint}”` })
+        : null,
       h('p', { class: 'ticket-note', text: scenario.customerNote }),
       h(
         'div',
@@ -122,17 +154,25 @@ function renderCall(ctx: ServiceCallContext): HTMLElement {
     const row = h('div', { class: 'measure-row' });
     for (const item of group.items) {
       const taken = run.taken.has(item.id);
+      // No `available` set means Practice mode, where the van is imaginary and
+      // complete. On a career call it is whatever you have actually bought.
+      const owned = !ctx.available || ctx.available.has(item.id);
+      const needs = owned ? undefined : toolForMeasurement(item.id);
+
       row.appendChild(
         h(
           'button',
           {
-            class: `measure-btn ${taken ? 'measure-taken' : ''}`,
-            disabled: taken,
-            title: item.instrument,
+            class: `measure-btn ${taken ? 'measure-taken' : ''} ${owned ? '' : 'measure-locked'}`,
+            disabled: taken || !owned,
+            title: owned ? item.instrument : `Needs a ${needs?.name.toLowerCase() ?? 'tool'}`,
             onClick: () => ctx.onMeasure(item.id),
           },
           h('span', { class: 'measure-name', text: item.name }),
-          h('span', { class: 'measure-cost', text: taken ? '✓' : `${item.minutes} min` }),
+          h('span', {
+            class: 'measure-cost',
+            text: !owned ? 'no tool' : taken ? '✓' : `${item.minutes} min`,
+          }),
         ),
       );
     }
@@ -254,8 +294,14 @@ function renderDebrief(ctx: ServiceCallContext): HTMLElement {
       h(
         'div',
         { class: 'results-actions' },
-        h('button', { class: 'btn btn-primary', onClick: ctx.onReplay, text: 'Next call' }),
-        h('button', { class: 'btn btn-ghost', onClick: ctx.onHome, text: 'Back to menu' }),
+        h('button', {
+          class: 'btn btn-primary',
+          onClick: ctx.onReplay,
+          text: ctx.replayLabel ?? 'Next call',
+        }),
+        ctx.replayLabel
+          ? null
+          : h('button', { class: 'btn btn-ghost', onClick: ctx.onHome, text: 'Back to menu' }),
       ),
       h('p', { class: 'results-seed', text: `Seed ${scenario.seed}` }),
     ),

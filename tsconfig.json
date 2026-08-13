@@ -25,6 +25,7 @@
       "@engine/*": ["src/engine/*"],
       "@content/*": ["src/content/*"],
       "@games/*": ["src/games/*"],
+      "@career/*": ["src/career/*"],
       "@ui/*": ["src/ui/*"]
     }
   },

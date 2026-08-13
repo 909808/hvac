@@ -330,6 +330,50 @@ export function buildSession(options: BuildOptions): BuiltSession {
   }
 }
 
+const JOB_QUIZ_QUESTIONS = 6;
+
+/**
+ * The questions a job actually turns on.
+ *
+ * Shorter than a checkpoint and revealed immediately — you are standing in
+ * somebody's plant room working it out, not sitting an exam. Draws from the
+ * sector the work depends on, topped up from that sector's generators so a
+ * thinly-authored sector still produces a full call.
+ */
+export function buildJobQuiz(options: {
+  readonly track: Track;
+  readonly pool: readonly Question[];
+  readonly domain: string;
+  readonly seed: number;
+}): BuiltSession {
+  const rng = createRng(options.seed);
+  const sector = options.track.sectors?.find((s) => s.id === options.domain);
+
+  const authored = filterQuestions(options.pool, {
+    track: options.track.id,
+    domain: options.domain,
+  });
+
+  const picked = rng.sample(authored, JOB_QUIZ_QUESTIONS);
+
+  if (picked.length < JOB_QUIZ_QUESTIONS && sector) {
+    const labs = sector.labs.filter((l): l is DrillLabId => l !== 'service-call');
+    for (const lab of labs) {
+      if (picked.length >= JOB_QUIZ_QUESTIONS) break;
+      picked.push(...generateDrill(lab, rng, JOB_QUIZ_QUESTIONS - picked.length));
+    }
+  }
+
+  return {
+    seed: options.seed,
+    config: {
+      mode: 'drill',
+      questions: rng.shuffle(picked).slice(0, JOB_QUIZ_QUESTIONS),
+      revealMode: 'immediate',
+    },
+  };
+}
+
 /** A mixed calculation workout across every HVAC drill generator. */
 export function buildMixedDrill(seed: number): BuiltSession {
   const rng = createRng(seed);

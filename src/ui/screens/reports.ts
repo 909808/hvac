@@ -1,4 +1,4 @@
-import { levelFor, objectiveProgress, type Profile } from '@engine/profile';
+import { objectiveProgress, type Profile } from '@engine/profile';
 import type { Question, Track } from '@engine/types';
 import { auditContent, objectiveTitle } from '@content/index';
 import { h } from '../dom';
@@ -14,8 +14,13 @@ export interface ReportContext {
 export function renderProgress(ctx: ReportContext): HTMLElement {
   const forTrack = ctx.pool.filter((q) => q.track === ctx.track.id);
   const progress = objectiveProgress(ctx.profile, forTrack);
-  const level = levelFor(ctx.profile.xp);
   const runs = ctx.profile.runs.slice(0, 12);
+
+  // Lifetime accuracy across every run, which is a real measure of how the
+  // studying is going in a way that a points total never was.
+  const asked = ctx.profile.runs.reduce((sum, r) => sum + r.asked, 0);
+  const correct = ctx.profile.runs.reduce((sum, r) => sum + r.correct, 0);
+  const passed = Object.values(ctx.profile.checkpoints).filter((c) => c.passed).length;
 
   const root = h('div', { class: 'report' });
 
@@ -35,10 +40,10 @@ export function renderProgress(ctx: ReportContext): HTMLElement {
       h(
         'div',
         { class: 'health-row' },
-        stat(String(level.level), 'level'),
-        stat(ctx.profile.xp.toLocaleString(), 'total XP'),
+        stat(`${passed} / ${ctx.track.sectors?.length ?? 0}`, 'sectors passed'),
+        stat(asked === 0 ? '—' : `${Math.round((correct / asked) * 100)}%`, 'lifetime accuracy'),
+        stat(asked.toLocaleString(), 'questions answered'),
         stat(String(ctx.profile.bestStreak), 'best streak'),
-        stat(String(ctx.profile.runs.length), 'runs'),
         stat(String(Object.keys(ctx.profile.cards).length), 'cards seen'),
       ),
     ),

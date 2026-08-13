@@ -566,8 +566,7 @@ p:last-child {
  */
 .progress-track,
 .breakdown-track,
-.domain-track,
-.level-track {
+.domain-track {
   background: var(--bg-inset);
   border-radius: 999px;
   overflow: hidden;
@@ -575,8 +574,7 @@ p:last-child {
 
 .progress-fill,
 .breakdown-fill,
-.domain-fill,
-.level-fill {
+.domain-fill {
   display: block;
   height: 100%;
   background: var(--accent);
@@ -584,17 +582,6 @@ p:last-child {
   transition: width 0.3s ease;
 }
 
-.level-track {
-  width: 100%;
-  height: 4px;
-}
-
-.level-num {
-  font-weight: 600;
-  font-size: 0.9rem;
-}
-
-.level-xp,
 .health-label {
   font-size: 0.74rem;
   color: var(--text-faint);
@@ -625,12 +612,6 @@ p:last-child {
 }
 
 /* --- archived Network+ home ----------------------------------------------- */
-
-.level-box {
-  display: grid;
-  gap: 4px;
-  min-width: 150px;
-}
 
 .mode-grid {
   display: grid;
@@ -1534,10 +1515,6 @@ p:last-child {
     align-items: flex-start;
   }
 
-  .level-box {
-    justify-items: start;
-  }
-
   .hud-stats {
     margin-left: 0;
     width: 100%;
@@ -2277,4 +2254,697 @@ p:last-child {
 
 .question-meta {
   margin-bottom: 10px;
+}
+
+/* ------------------------------------------------------------------------- */
+/* The career                                                                 */
+/* ------------------------------------------------------------------------- */
+
+/*
+ * The working side of the app.
+ *
+ * Same paper-under-a-lamp palette as the study path, with one deliberate
+ * difference: money and time are set in the mono face, because they are numbers
+ * you check at a glance rather than prose you read.
+ */
+
+/* --- doorway on the study path -------------------------------------------- */
+
+.career-card {
+  font: inherit;
+  text-align: left;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 18px;
+  margin: -22px 0 40px;
+  background: transparent;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius);
+  color: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.career-card:hover {
+  border-color: var(--accent);
+  background: var(--accent-wash);
+}
+
+.career-card-body {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.career-card-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.career-card-detail {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}
+
+.career-card-go {
+  font-size: 0.8rem;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+/* --- the day header ------------------------------------------------------- */
+
+.career-head {
+  margin-bottom: 28px;
+}
+
+.career-head-top {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.career-identity {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  min-width: 0;
+}
+
+.career-identity h1 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
+.career-day {
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  color: var(--text-faint);
+}
+
+.career-purse {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.purse-stat {
+  display: grid;
+  gap: 2px;
+}
+
+.purse-label {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-faint);
+}
+
+.purse-value {
+  font-family: var(--mono);
+  font-size: 1.02rem;
+  font-weight: 600;
+}
+
+.day-track {
+  height: 3px;
+  background: var(--bg-inset);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.day-fill {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+.career-next {
+  margin: 12px 0 0;
+  font-size: 0.82rem;
+  color: var(--text-dim);
+}
+
+.career-notice {
+  margin: 0 0 18px;
+  padding: 10px 14px;
+  font-size: 0.84rem;
+  color: var(--warn);
+  background: var(--warn-dim);
+  border-radius: var(--radius-sm);
+}
+
+/* --- town map ------------------------------------------------------------- */
+
+.map-panel {
+  padding-bottom: 14px;
+}
+
+.townmap {
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  display: block;
+  overflow: visible;
+}
+
+.town-road {
+  stroke: var(--border-strong);
+  stroke-width: 0.7;
+  stroke-linecap: round;
+}
+
+.town-road-dim {
+  stroke: var(--border);
+  stroke-dasharray: 1.5 2.5;
+}
+
+.town-node {
+  cursor: pointer;
+}
+
+.town-hit {
+  fill: transparent;
+}
+
+.town-dot {
+  fill: var(--bg-inset);
+  stroke: var(--border-strong);
+  stroke-width: 0.9;
+  transition: fill 0.15s ease, stroke 0.15s ease;
+}
+
+.town-node-locked .town-dot {
+  fill: transparent;
+  stroke: var(--border);
+  stroke-dasharray: 1.2 1.4;
+}
+
+.town-node-ready .town-dot {
+  fill: var(--accent);
+  stroke: var(--accent);
+}
+
+.town-node-selected .town-dot {
+  stroke: var(--text);
+  stroke-width: 1.4;
+}
+
+.town-node-open:hover .town-dot {
+  stroke: var(--accent);
+}
+
+.town-label {
+  font-family: var(--sans);
+  font-size: 3.1px;
+  fill: var(--text-dim);
+  letter-spacing: 0.02em;
+}
+
+.town-node-locked .town-label {
+  fill: var(--text-faint);
+}
+
+.town-gate {
+  font-family: var(--mono);
+  font-size: 2.5px;
+  fill: var(--warn);
+  letter-spacing: -0.02em;
+}
+
+.town-node-selected .town-label {
+  fill: var(--text);
+}
+
+.town-badge {
+  fill: var(--bg-raised);
+  stroke: var(--border-strong);
+  stroke-width: 0.5;
+}
+
+.town-badge-text {
+  font-family: var(--mono);
+  font-size: 2.6px;
+  fill: var(--text-dim);
+}
+
+.town-node:focus {
+  outline: none;
+}
+
+.town-node:focus-visible .town-dot {
+  stroke: var(--accent);
+  stroke-width: 1.6;
+}
+
+.map-note {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  font-size: 0.82rem;
+  color: var(--text-dim);
+}
+
+.map-note-idle {
+  color: var(--text-faint);
+  font-size: 0.78rem;
+}
+
+.map-travel {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: 0.74rem;
+  color: var(--text-faint);
+}
+
+/* --- job board ------------------------------------------------------------ */
+
+.board {
+  display: grid;
+  gap: 2px;
+}
+
+.board-divider {
+  margin: 20px 0 6px;
+  font-size: 0.72rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-faint);
+}
+
+.job {
+  display: grid;
+  gap: 8px;
+  padding: 16px 0;
+  border-top: 1px solid var(--border);
+}
+
+.job:first-of-type {
+  border-top: none;
+}
+
+.job-blocked {
+  opacity: 0.62;
+}
+
+.job-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.job-headings {
+  min-width: 0;
+}
+
+.job-title {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 2px;
+}
+
+.job-where {
+  margin: 0;
+  font-size: 0.76rem;
+  color: var(--text-faint);
+  font-family: var(--mono);
+}
+
+.job-pay {
+  display: grid;
+  justify-items: end;
+  flex-shrink: 0;
+}
+
+.job-pay-value {
+  font-family: var(--mono);
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.job-pay-note {
+  font-size: 0.7rem;
+  color: var(--text-faint);
+  font-family: var(--mono);
+}
+
+.job-complaint {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 0.94rem;
+  color: var(--text-dim);
+}
+
+.job-tags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.chip-quiet {
+  color: var(--text-faint);
+  border-color: var(--border);
+  text-transform: capitalize;
+}
+
+.job .btn {
+  justify-self: start;
+}
+
+.job-blockers {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.blocker {
+  font-size: 0.75rem;
+  font-family: var(--mono);
+  color: var(--warn);
+  background: var(--warn-dim);
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+}
+
+/* --- the van -------------------------------------------------------------- */
+
+.tool-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 2px 20px;
+}
+
+.tool {
+  display: grid;
+  gap: 5px;
+  align-content: start;
+  padding: 14px 0;
+  border-top: 1px solid var(--border);
+}
+
+.tool-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.tool-name {
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.tool-cost {
+  font-family: var(--mono);
+  font-size: 0.86rem;
+  color: var(--accent);
+}
+
+.tool-owned-mark {
+  color: var(--ok);
+  font-size: 0.85rem;
+}
+
+.tool-blurb {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--text-dim);
+}
+
+.tool-enables {
+  margin: 0;
+  font-size: 0.74rem;
+  font-family: var(--mono);
+  color: var(--text-faint);
+}
+
+.tool-warn {
+  color: var(--warn);
+}
+
+.tool-dear {
+  opacity: 0.6;
+}
+
+.tool .btn {
+  justify-self: start;
+  margin-top: 2px;
+}
+
+/* --- logbook -------------------------------------------------------------- */
+
+.record-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 16px 24px;
+  margin: 16px 0;
+}
+
+.record {
+  display: grid;
+  gap: 2px;
+}
+
+.record-label {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-faint);
+}
+
+.record-value {
+  font-family: var(--mono);
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.rung {
+  display: grid;
+  gap: 4px;
+  padding: 14px 0 14px 16px;
+  border-left: 2px solid var(--border);
+}
+
+.rung-past {
+  border-left-color: var(--ok);
+  opacity: 0.62;
+}
+
+.rung-now {
+  border-left-color: var(--accent);
+  background: var(--accent-wash);
+  padding-right: 14px;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+.rung-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.rung-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.rung-cut {
+  font-family: var(--mono);
+  font-size: 0.74rem;
+  color: var(--text-faint);
+}
+
+.rung-blurb {
+  margin: 0;
+  font-size: 0.83rem;
+  color: var(--text-dim);
+}
+
+.rung-needs {
+  margin: 0;
+  font-size: 0.75rem;
+  font-family: var(--mono);
+  color: var(--warn);
+}
+
+.log-entry {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.84rem;
+}
+
+.log-entry:last-child {
+  border-bottom: none;
+}
+
+.log-text {
+  color: var(--text-dim);
+}
+
+.log-rank .log-text {
+  color: var(--accent);
+}
+
+.log-day .log-text {
+  color: var(--text-faint);
+  font-style: italic;
+}
+
+.log-money {
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  color: var(--ok);
+  flex-shrink: 0;
+}
+
+.log-money-out {
+  color: var(--text-faint);
+}
+
+/* --- intro, debrief and day summary --------------------------------------- */
+
+.career-intro {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 70vh;
+}
+
+.intro-card {
+  max-width: 460px;
+  width: 100%;
+  display: grid;
+  gap: 14px;
+}
+
+.intro-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--accent);
+}
+
+.intro-title {
+  font-size: 1.6rem;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  margin: 0;
+}
+
+.intro-body {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--text-dim);
+}
+
+.intro-quiet {
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  color: var(--text-faint);
+}
+
+.intro-card .btn {
+  justify-self: start;
+  margin-top: 4px;
+}
+
+.day-events {
+  display: grid;
+  border-top: 1px solid var(--border);
+  padding-top: 6px;
+}
+
+.promotion {
+  margin: 0;
+  padding: 12px 14px;
+  font-size: 0.87rem;
+  color: var(--accent);
+  background: var(--accent-wash);
+  border-radius: var(--radius-sm);
+}
+
+.shelf-note {
+  margin: 14px 0 0;
+  font-size: 0.76rem;
+  font-family: var(--mono);
+  color: var(--text-faint);
+}
+
+.shelf-note-sectors {
+  text-transform: capitalize;
+}
+
+/* --- measurement locked by a missing tool --------------------------------- */
+
+.measure-locked {
+  opacity: 0.42;
+  border-style: dashed;
+}
+
+.measure-locked .measure-cost {
+  color: var(--warn);
+}
+
+@media (max-width: 640px) {
+  .career-head-top {
+    align-items: flex-start;
+  }
+
+  .career-purse {
+    gap: 18px;
+    width: 100%;
+  }
+
+  .job-head {
+    gap: 10px;
+  }
+
+  .tool-list {
+    grid-template-columns: 1fr;
+  }
+}
+
+.debrief-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.debrief-actions .btn {
+  margin-top: 0;
+}
+
+.ticket-onsite {
+  margin: 6px 0 0;
+  font-family: var(--serif);
+  font-size: 0.9rem;
+  color: var(--text-dim);
+  padding-left: 12px;
+  border-left: 2px solid var(--border-strong);
 }

@@ -4,7 +4,7 @@ import { createRng } from '../src/engine/rng';
 import { Session, streakMultiplier } from '../src/engine/session';
 import { DEFAULT_EASE, MIN_EASE, isDue, mastery, newCard, review, scheduleOrder } from '../src/engine/srs';
 import { buildExam, filterQuestions } from '../src/engine/select';
-import { emptyProfile, levelFor, objectiveProgress, recordReview, weakest } from '../src/engine/profile';
+import { emptyProfile, objectiveProgress, recordReview, weakest } from '../src/engine/profile';
 import type { Question } from '../src/engine/types';
 import { N10_009 } from '../src/content/tracks';
 import { ALL_QUESTIONS } from '../src/content';
@@ -351,16 +351,5 @@ describe('profile', () => {
     const missed = ALL_QUESTIONS[0]!;
     p = recordReview(p, missed.id, 0, now);
     expect(weakest(p, ALL_QUESTIONS, 1)[0]?.id).toBe(missed.id);
-  });
-
-  it('levels up on rising thresholds', () => {
-    // Cumulative thresholds are 100, 300, 600, 1000 — each level costs 100 more.
-    expect(levelFor(0).level).toBe(1);
-    expect(levelFor(99).level).toBe(1);
-    expect(levelFor(100).level).toBe(2);
-    expect(levelFor(299).level).toBe(2);
-    expect(levelFor(300).level).toBe(3);
-    expect(levelFor(600).level).toBe(4);
-    expect(levelFor(1000).level).toBe(5);
   });
 });

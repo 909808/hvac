@@ -11,11 +11,12 @@ rather than a lookup table of canned answers.
 ```bash
 npm install
 npm run dev        # http://localhost:5173
-npm test           # 182 tests: physics, fault signatures, content validation
+npm test           # 240 tests: physics, fault signatures, content and career rules
 ```
 
 **Content: 268 questions across six question types, 15 lessons, 6 generated drill families,
-and a service call simulator with 9 modelled faults.**
+a service call simulator with 9 modelled faults, and a career sim with 41 jobs across six
+districts.**
 
 ---
 
@@ -60,6 +61,62 @@ which is a different skill from naming it.
 
 ---
 
+## The career
+
+Alongside the curriculum there is a career: you start at the trade school with a bag of
+hand tools and $250, and you work your way up to owning the van.
+
+**There is no XP.** An experience bar is a meaningless reward when nothing spends it, and
+adding one alongside a curriculum would be inventing a second, fake version of the same
+progression. What you earn instead is **money**, **reputation** and **rank** — and what
+those buy is the ability to do more interesting work.
+
+**The curriculum is the tech tree.** Every job on the board states what it needs in three
+currencies:
+
+- **knowledge** — sectors of the course you have passed
+- **tools** — instruments actually in your van
+- **standing** — rank and reputation
+
+A job you cannot take says exactly why, and the reason is a button. A walk-in cooler call
+sitting on the board marked *"Study Refrigerants & EPA 608"* is a better reason to open a
+lesson than any number of points, because it is a specific thing you want and a specific
+reason you cannot have it. The board always reserves a little over half its slots for work
+you can do — a board you cannot touch is a dead end, not a difficulty curve.
+
+**Tools are capabilities, not stats.** Every instrument in the supply house maps to
+measurements it makes possible in the Service Call simulator, and the simulator enforces it
+literally: without a manometer, "total external static pressure" is greyed out and marked
+*no tool*. A manifold set costs $320 and a student clears about $30 an afternoon, so the
+first gauge purchase is a real decision.
+
+**A day is 480 minutes** and travel spends them. The Tech Campus is fifty minutes each way,
+which is forty you are not earning — so the map is geography rather than a menu.
+
+| Rank | Needs | Keeps |
+|---|---|---|
+| Student | — | 45% |
+| Apprentice | sector 1, 3 jobs, $120 earned | 50% |
+| Technician | sectors 1–3, 10 jobs, $900 earned | 65% |
+| Lead Technician | sectors 1–6, 25 jobs, $5,000 earned | 80% |
+| Owner | all ten sectors, 50 jobs, $20,000 earned | 100% |
+
+You cannot grind your way to Technician. Passing sectors 2 and 3 is what makes you one,
+which is the only honest way to build this.
+
+Jobs resolve three ways. **Diagnostic** calls hand you the Service Call simulator, gated on
+the tools you own. **Knowledge** calls ask the six questions the work actually turns on.
+**Routine** work you can do once you own the kit, so there is always something to earn on a
+bad day. A right answer without the evidence pays but earns almost no reputation — the
+customer got a working system and does not know how you got there, and reputation is other
+people talking about whether you know what you are doing.
+
+Six districts open on reputation, not money, because nobody lets a stranger into a data
+centre no matter what their van looks like: Trade School and Maple Heights from the start,
+then Old Town (12), Downtown (30), the Industrial Park (55) and the Tech Campus (85).
+
+---
+
 ## Design
 
 Warm, low-contrast, and deliberately quiet. This is something you sit with for half an hour
@@ -77,7 +134,9 @@ sectors stay visible and say what opens them, because hiding the road ahead make
 curriculum feel arbitrary.
 
 **Tooling lives in the footer.** Labs, progress and the content audit fold into a shelf at
-the bottom. They are useful, and none of them is what you came to do.
+the bottom. They are useful, and none of them is what you came to do. The career sits as
+one quiet line under Continue — it is what the studying is *for*, not a competing
+attraction with its own badge count.
 
 Lessons set their prose in a serif and hold a narrow measure, because they are meant to be
 read rather than scanned. Question screens show the objective and nothing else — no
@@ -200,6 +259,12 @@ Lessons go through the same validator: table rows must match their headers, diag
 must point at nodes that exist, worked examples need an answer, and a lesson cannot be
 marked verified without a citation.
 
+The career sim is held to the same standard by tests rather than citations, since it is
+game design rather than fact: every job's required sectors and tools must exist, every
+simulator measurement must be enabled by exactly one tool, ranks must get strictly harder,
+no job may take longer than a working day, and a fresh career must always have at least one
+takeable job on the board.
+
 Current state: **268 HVAC questions, 76 verified, 192 awaiting a citation**, plus 15
 lessons. The verified ones are cited to things you can check in a minute — 40 CFR Part 82
 for the EPA rules, ASHRAE Fundamentals for psychrometrics, OSHA 1910.147 for
@@ -252,13 +317,22 @@ src/
     servicecall.ts   Scenario generation and scoring
     drills.ts        Six generated drill families
   games/             ipv4.ts, subnet.ts, portrush.ts — the Network+ generators
+  career/            The career sim. Pure functions, no DOM.
+    types.ts         Ranks, tools, districts, jobs, career state
+    world.ts         Six districts and five ranks
+    tools.ts         Fifteen instruments and the readings each unlocks
+    jobs.ts          Job templates, availability, board generation
+    career.ts        The state machine: pay, reputation, days, promotion
+    storage.ts       Save and load
   content/
     tracks.ts        Sectors, domains, objectives
     hvac/            One question file per sector
     hvac/lessons/    One lesson file per sector
     network-plus/    Archived — kept, not maintained
   ui/                Browser front-end, no framework
-tests/               182 tests
+    townmap.ts       The town, drawn as SVG
+    screens/         One module per screen
+tests/               240 tests
 ```
 
 ## Scripts

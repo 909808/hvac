@@ -8,6 +8,8 @@ import {
   type SectorProgress,
 } from '@engine/progression';
 import type { Question, Track } from '@engine/types';
+import type { CareerState } from '@career/types';
+import { rank } from '@career/world';
 import { h } from '../dom';
 import { labModesFor, type ModeId } from '../modes';
 
@@ -19,6 +21,9 @@ export interface SectorMapContext {
   readonly profile: Profile;
   /** Sector id the reader has opened, or undefined to default to the current one. */
   readonly expanded: string | undefined;
+  /** Present only for tracks that have a career attached. */
+  readonly career?: CareerState;
+  onOpenCareer?(): void;
   onToggleSector(sectorId: string): void;
   onStartLesson(sectorId: string): void;
   onStartDrill(sectorId: string): void;
@@ -102,6 +107,8 @@ export function renderSectorMap(ctx: SectorMapContext): HTMLElement {
     root.appendChild(renderContinue(ctx, current));
   }
 
+  if (ctx.onOpenCareer) root.appendChild(renderCareerCard(ctx, ctx.onOpenCareer));
+
   // --- the path ------------------------------------------------------------
   const list = h('ol', { class: 'path' });
   for (const entry of progress) {
@@ -142,6 +149,43 @@ function renderContinue(ctx: SectorMapContext, current: SectorProgress): HTMLEle
       h('p', { class: 'continue-detail', text: suggestion.detail }),
     ),
     h('button', { class: 'btn btn-primary', onClick: suggestion.run, text: suggestion.label }),
+  );
+}
+
+// ---------------------------------------------------------------------------
+// The career, sitting alongside the curriculum
+// ---------------------------------------------------------------------------
+
+/**
+ * The doorway to the working side.
+ *
+ * Kept to one quiet line under Continue, because the study path is still the
+ * thing that matters — the career is what the studying is *for*, not a
+ * competing attraction with its own badge count.
+ */
+function renderCareerCard(ctx: SectorMapContext, open: () => void): HTMLElement {
+  const career = ctx.career;
+  const started = career?.started ?? false;
+
+  const detail = !started
+    ? 'Trade school, a bag of hand tools and $250. Work your way up.'
+    : career
+      ? `Day ${career.day} · $${career.money.toLocaleString()} · ${career.board.length} jobs going`
+      : '';
+
+  return h(
+    'button',
+    { class: 'career-card', onClick: open },
+    h(
+      'div',
+      { class: 'career-card-body' },
+      h('span', {
+        class: 'career-card-label',
+        text: started && career ? rank(career.rank).title : 'The working side',
+      }),
+      h('span', { class: 'career-card-detail', text: detail }),
+    ),
+    h('span', { class: 'career-card-go', text: started ? 'Clock in →' : 'Start →' }),
   );
 }
 
