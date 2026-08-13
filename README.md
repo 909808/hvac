@@ -8,15 +8,48 @@ Ten sectors, each with **lessons that teach before they test**, a question bank,
 checkpoint that gates the next sector. Plus simulators driven by a real physical model
 rather than a lookup table of canned answers.
 
-```bash
-npm install
-npm run dev        # http://localhost:5173
-npm test           # 240 tests: physics, fault signatures, content and career rules
-```
-
 **Content: 268 questions across six question types, 15 lessons, 6 generated drill families,
 a service call simulator with 9 modelled faults, and a career sim with 41 jobs across six
 districts.**
+
+---
+
+## Just want to play it?
+
+**Download [`HVAC-Trainer.html`](HVAC-Trainer.html) and double-click it.** That is the whole
+install. It is one self-contained file — no Node, no terminal, no setup — and it runs in
+whatever browser you already have.
+
+On GitHub, click the file above, then the **download icon** near the top right (it looks
+like a downward arrow, labelled *Download raw file*). Do not use right-click → Save As on
+the page you are looking at; that saves GitHub's page instead of the game.
+
+Your progress saves automatically in that browser. A few things worth knowing:
+
+- Progress is tied to **the browser, not the file**, so moving the file around is fine.
+- Using a different browser, or a private/incognito window, starts you over.
+- Clearing your browsing data clears your progress too.
+
+Works offline. Nothing is uploaded anywhere and there is no account.
+
+---
+
+## Running it from the source
+
+Only needed if you want to change something. You need [Node.js](https://nodejs.org) — the
+LTS installer, default options.
+
+```bash
+npm install        # once, downloads the build tools
+npm run dev        # then open http://localhost:5173
+```
+
+Press `Ctrl+C` in the terminal to stop it.
+
+```bash
+npm run package    # rebuild the single-file HVAC-Trainer.html
+npm test           # 240 tests: physics, fault signatures, content and career rules
+```
 
 ---
 
@@ -332,6 +365,7 @@ src/
   ui/                Browser front-end, no framework
     townmap.ts       The town, drawn as SVG
     screens/         One module per screen
+scripts/package.mjs  Folds the build into one double-clickable HTML file
 tests/               240 tests
 ```
 

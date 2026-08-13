@@ -1,12 +1,13 @@
 {
-  "name": "netplus-trainer",
+  "name": "hvac-trainer",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "An interactive browser game for studying CompTIA Network+ (N10-009), built to accept verified content from published study guides.",
+  "description": "An interactive course, simulator and career game for learning HVAC.",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
+    "package": "npm run build && node scripts/package.mjs",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
