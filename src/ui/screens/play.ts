@@ -48,19 +48,14 @@ export function renderPlay(ctx: PlayContext): HTMLElement {
 
   const card = h('div', { class: 'panel question-card' });
 
+  // Just the objective. Difficulty would bias the answer before it is given,
+  // and the draft badge is information the author needs, not the learner —
+  // it still appears on the citation line after answering.
   card.appendChild(
     h(
       'div',
       { class: 'question-meta' },
-      h('span', { class: 'chip', text: `${question.domain} · ${question.objective}` }),
-      h('span', { class: `chip chip-diff-${question.difficulty}`, text: difficultyLabel(question) }),
-      question.status === 'draft'
-        ? h('span', {
-            class: 'chip chip-draft',
-            text: 'unverified',
-            title: 'This item has no citation yet. Check it against a book before trusting it.',
-          })
-        : null,
+      h('span', { class: 'objective-tag', text: `${question.domain} · ${question.objective}` }),
     ),
   );
 
@@ -91,11 +86,13 @@ function renderHud(ctx: PlayContext, snap: ReturnType<Session['snapshot']>): HTM
   const mode = modeById(ctx.mode);
   const timeLeft = ctx.session.timeLeftSec();
 
+  // Only show a stat once it says something. A permanent "SCORE 0 · STREAK 0"
+  // is noise on every screen for the whole first question.
   const stats = h(
     'div',
     { class: 'hud-stats' },
-    stat('Score', snap.score.toLocaleString()),
-    stat('Streak', `${snap.streak}${snap.streak >= 3 ? ' 🔥' : ''}`),
+    snap.score > 0 ? stat('Score', snap.score.toLocaleString()) : null,
+    snap.streak >= 2 ? stat('Streak', `${snap.streak}${snap.streak >= 4 ? ' ✦' : ''}`) : null,
     snap.livesLeft === undefined
       ? null
       : stat('Lives', '●'.repeat(Math.max(0, snap.livesLeft)) || '—'),
@@ -142,9 +139,6 @@ function stat(label: string, value: string, extra?: string): HTMLElement {
   );
 }
 
-function difficultyLabel(q: Question): string {
-  return ['', 'recall', 'applied', 'analysis'][q.difficulty] ?? '';
-}
 
 // ---------------------------------------------------------------------------
 // Answer widgets

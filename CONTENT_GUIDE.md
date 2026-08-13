@@ -389,9 +389,13 @@ The HVAC track has ten sectors, one file each under `src/content/hvac/`. Open th
 the sector, copy an existing entry, change it, add it to the export at the bottom. That is
 the whole workflow.
 
+Each sector has a main file and an `-extra` continuation, split purely so no single file
+gets unwieldy. Both are merged in `index.ts`; add new questions to whichever is shorter.
+
 ```
 src/content/hvac/
   sector-1-fundamentals.ts     1.0  Fundamentals & Safety
+  sector-1-extra.ts            1.0  (continuation)
   sector-2-cycle.ts            2.0  The Refrigeration Cycle
   sector-3-refrigerants.ts     3.0  Refrigerants & EPA 608
   sector-4-charging.ts         4.0  Metering Devices & Charging

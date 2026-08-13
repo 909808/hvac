@@ -14,6 +14,7 @@ import type { FaultId, MeasurementId } from '@games/hvac/system';
 import { ServiceCallRun, generateServiceCall } from '@games/hvac/servicecall';
 import type { Response, Track } from '@engine/types';
 import { lessonsFor } from '@engine/lesson';
+import { currentSector } from '@engine/progression';
 import { ALL_LESSONS, ALL_QUESTIONS, TRACKS, trackById } from '@content/index';
 import { clear, h } from './dom';
 import { buildMixedDrill, buildSession, type ModeId } from './modes';
@@ -56,6 +57,8 @@ export class App {
   private seed = randomSeed();
   private shuffleSeed = randomSeed();
   private timer: number | undefined;
+  /** Which sector row is open on the path. Undefined means "the current one". */
+  private expandedSector: string | undefined;
 
   constructor(root: HTMLElement) {
     this.root = root;
@@ -88,6 +91,8 @@ export class App {
                 pool: ALL_QUESTIONS,
                 lessons: ALL_LESSONS,
                 profile: this.profile,
+                expanded: this.expandedSector,
+                onToggleSector: this.toggleSector,
                 onStartLesson: this.startLesson,
                 onStartDrill: (sectorId) => this.start('drill', sectorId),
                 onStartCheckpoint: (sectorId) => this.start('checkpoint', sectorId),
@@ -204,6 +209,14 @@ export class App {
   // -------------------------------------------------------------------------
   // Session lifecycle
   // -------------------------------------------------------------------------
+
+  /** Clicking the open row closes it, so the path can be collapsed entirely. */
+  private toggleSector = (sectorId: string): void => {
+    const current = currentSector(this.track, this.profile, ALL_QUESTIONS);
+    const openNow = this.expandedSector ?? current?.sector.id;
+    this.expandedSector = openNow === sectorId ? '' : sectorId;
+    this.render();
+  };
 
   private startLesson = (sectorId: string): void => {
     resetLessonState();

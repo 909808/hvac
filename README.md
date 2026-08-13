@@ -14,7 +14,7 @@ npm run dev        # http://localhost:5173
 npm test           # 182 tests: physics, fault signatures, content validation
 ```
 
-**Content: 184 questions across six question types, 15 lessons, 6 generated drill families,
+**Content: 268 questions across six question types, 15 lessons, 6 generated drill families,
 and a service call simulator with 9 modelled faults.**
 
 ---
@@ -57,6 +57,34 @@ There is no step where a number gets copied by hand.
 Six question types: single choice, select-all, typed input with numeric tolerance,
 put-in-order, match-the-pairs, and **hotspot** — click the right component on a diagram,
 which is a different skill from naming it.
+
+---
+
+## Design
+
+Warm, low-contrast, and deliberately quiet. This is something you sit with for half an hour
+at a time, and a screen that reads like paper under a lamp is easier to stay in than one
+that reads like a dashboard.
+
+Three rules the interface follows:
+
+**One next thing.** The home screen opens with a single Continue card that knows where you
+are — start the lesson, practise, or retake the checkpoint, depending on what you have
+already done. Everything else is below it.
+
+**The path is a list, not a grid.** Ten quiet rows, only the current one expanded. Locked
+sectors stay visible and say what opens them, because hiding the road ahead makes a
+curriculum feel arbitrary.
+
+**Tooling lives in the footer.** Labs, progress and the content audit fold into a shelf at
+the bottom. They are useful, and none of them is what you came to do.
+
+Lessons set their prose in a serif and hold a narrow measure, because they are meant to be
+read rather than scanned. Question screens show the objective and nothing else — no
+difficulty badge to bias the answer, no draft badge that would appear on most of the bank,
+and no score or streak until there is a number worth showing.
+
+Dark by default, with a light theme that follows the system setting.
 
 ---
 
@@ -172,7 +200,7 @@ Lessons go through the same validator: table rows must match their headers, diag
 must point at nodes that exist, worked examples need an answer, and a lesson cannot be
 marked verified without a citation.
 
-Current state: **184 HVAC questions, 55 verified, 129 awaiting a citation**, plus 15
+Current state: **268 HVAC questions, 76 verified, 192 awaiting a citation**, plus 15
 lessons. The verified ones are cited to things you can check in a minute — 40 CFR Part 82
 for the EPA rules, ASHRAE Fundamentals for psychrometrics, OSHA 1910.147 for
 lockout/tagout, NFPA 70E for electrical practice, or a stated derivation. The drafts are
